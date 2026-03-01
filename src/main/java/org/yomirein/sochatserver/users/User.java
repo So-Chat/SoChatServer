@@ -1,0 +1,35 @@
+package org.yomirein.sochatserver.users;
+
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.yomirein.sochatserver.utils.PublicKeySerializer;
+
+import java.security.PublicKey;
+
+@NoArgsConstructor
+@AllArgsConstructor
+public class User {
+
+    @Getter @Setter
+    private long id;
+
+    @Getter @Setter
+    private String username;
+
+    @Getter @Setter
+    @JsonSerialize(using = PublicKeySerializer.class)
+    private PublicKey ed25519PublicKey;
+
+    @Getter @Setter
+    @JsonSerialize(using = PublicKeySerializer.class)
+    private PublicKey x25519PublicKey;
+
+    public User(String username, PublicKey ed25519PublicKey, PublicKey x25519PublicKey) {
+        this.username = username;
+        this.ed25519PublicKey = ed25519PublicKey;
+        this.x25519PublicKey = x25519PublicKey;
+    }
+}

@@ -1,0 +1,287 @@
+package org.yomirein.sochatserver.friendship;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import io.netty.channel.ChannelHandlerContext;
+import lombok.RequiredArgsConstructor;
+import org.yomirein.sochatserver.sessions.SessionManager;
+import org.yomirein.sochatserver.common.models.MessagePacket;
+import org.yomirein.sochatserver.sessions.Session;
+import org.yomirein.sochatserver.users.User;
+import org.yomirein.sochatserver.users.UserRepository;
+import org.yomirein.sochatserver.utils.JsonConfig;
+import org.yomirein.sochatserver.utils.MessageSender;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+
+import static org.yomirein.sochatserver.utils.MessageSender.notifyUser;
+import static org.yomirein.sochatserver.utils.MessageSender.sendError;
+
+@RequiredArgsConstructor
+public class FriendsHandler {
+
+    private final SessionManager sessionManager;
+
+    private final UserRepository userRepository;
+    private final FriendshipRepository friendshipRepository;
+
+    private final FriendshipService friendshipService;
+
+
+    public void requestSend(ChannelHandlerContext channelHandlerContext, MessagePacket messagePacket, Long userId) {
+        try {
+            Optional<User> toUserCheck = userRepository.findByName(messagePacket.getPayload().get("username").asText());
+            Optional<User> userCheck = userRepository.findById(userId);
+
+            if (toUserCheck.isEmpty() || userCheck.isEmpty()){
+                return;
+            }
+            User user = userCheck.get();
+            User toUser = toUserCheck.get();
+
+            if (user == toUser){
+                MessagePacket answerPacket = new MessagePacket.Builder()
+                        .type(messagePacket.getType())
+                        .put("success", false)
+                        .put("requestId", messagePacket.getPayload().get("requestId").asText())
+                        .put("server_message", "You can't add yourself to friends")
+                        .build();
+                channelHandlerContext.channel().writeAndFlush(answerPacket);
+                return;
+            }
+
+            String fingerprint = messagePacket.getPayload().get("fingerprint").asText();
+
+            Friendship result = friendshipService.sendRequest(userId, toUser.getId(), fingerprint);
+
+            MessagePacket answerPacket = new MessagePacket.Builder()
+                    .type(messagePacket.getType())
+                    .put("success", true)
+                    .put("requestId", messagePacket.getPayload().get("requestId").asText())
+                    .put("server_message", "Send friend request successfully")
+                    .put("friendship", JsonConfig.MAPPER.writeValueAsString(result))
+                    .build();
+
+            MessagePacket requestInformation = new MessagePacket.Builder()
+                    .type(messagePacket.getType())
+                    .put("server_message", "New friend request")
+                    .put("friendship", JsonConfig.MAPPER.writeValueAsString(result))
+                    .build();
+
+            notifyUser(toUser, requestInformation, sessionManager);
+            channelHandlerContext.channel().writeAndFlush(answerPacket);
+
+        } catch (Exception e) {
+            System.out.println(e);
+            sendError(channelHandlerContext, messagePacket, e.getMessage());
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void requestAccept(ChannelHandlerContext channelHandlerContext, MessagePacket messagePacket, Long userId){
+        try {
+            String fingerprint = messagePacket.getPayload().get("fingerprint").asText();
+
+            Optional<User> toUserCheck = userRepository.findByName(messagePacket.getPayload().get("username").asText());
+            Optional<User> userCheck = userRepository.findById(userId);
+
+            if (toUserCheck.isEmpty() || userCheck.isEmpty()){
+                return;
+            }
+            User user = userCheck.get();
+            User toUser = toUserCheck.get();
+
+            Optional<Friendship> friendshipCheck = friendshipRepository.findByUserAndFriend(user, toUser);
+            if (friendshipCheck.isEmpty()){
+                return;
+            }
+            Friendship friendship = friendshipCheck.get();
+
+            if (friendship.getUser().getId() == user.getId()){
+                MessagePacket answerPacket = new MessagePacket.Builder()
+                        .type(messagePacket.getType())
+                        .put("success", false)
+                        .put("requestId", messagePacket.getPayload().get("requestId").asText())
+                        .put("server_message", "You can't add friend by yourself!")
+                        .build();
+                channelHandlerContext.channel().writeAndFlush(answerPacket);
+                return;
+            }
+
+            Friendship result = friendshipService.acceptRequest(friendship.getId(), fingerprint);
+
+            MessagePacket answerPacket = new MessagePacket.Builder()
+                    .type(messagePacket.getType())
+                    .put("success", true)
+                    .put("requestId", messagePacket.getPayload().get("requestId").asText())
+                    .put("server_message", "Friend added successfully")
+                    .put("friendship", JsonConfig.MAPPER.writeValueAsString(result))
+                    .build();
+
+            MessagePacket requestInformation = new MessagePacket.Builder()
+                    .type(messagePacket.getType())
+                    .put("server_message", "Friend added successfully")
+                    .put("friendship", JsonConfig.MAPPER.writeValueAsString(result))
+                    .build();
+
+            notifyUser(toUser, requestInformation, sessionManager);
+            channelHandlerContext.channel().writeAndFlush(answerPacket);
+
+        } catch (Exception e) {
+            System.out.println(e);
+            sendError(channelHandlerContext, messagePacket, e.getMessage());
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void requestDecline(ChannelHandlerContext channelHandlerContext, MessagePacket messagePacket, Long userId){
+        try {
+            Optional<User> toUserCheck = userRepository.findByName(messagePacket.getPayload().get("username").asText());
+            Optional<User> userCheck = userRepository.findById(userId);
+
+            if (toUserCheck.isEmpty() || userCheck.isEmpty()){
+                return;
+            }
+            User user = userCheck.get();
+            User toUser = toUserCheck.get();
+
+            Optional<Friendship> friendshipCheck = friendshipRepository.findByUserAndFriend(user, toUser);
+            if (friendshipCheck.isEmpty()){
+                return;
+            }
+            Friendship friendship = friendshipCheck.get();
+
+
+            boolean result = friendshipService.declineRequest(friendship.getId());
+
+            MessagePacket answerPacket = new MessagePacket.Builder()
+                    .type(messagePacket.getType())
+                    .put("success", true)
+                    .put("requestId", messagePacket.getPayload().get("requestId").asText())
+                    .put("server_message", "Friend request declined successfully")
+                    .put("removed", JsonConfig.MAPPER.writeValueAsString(toUser))
+                    .put("user", JsonConfig.MAPPER.writeValueAsString(user))
+                    .build();
+
+            MessagePacket requestInformation = new MessagePacket.Builder()
+                    .type(messagePacket.getType())
+                    .put("server_message", "Friend request declined")
+                    .put("removed", JsonConfig.MAPPER.writeValueAsString(toUser))
+                    .put("user", JsonConfig.MAPPER.writeValueAsString(user))
+                    .build();
+
+            notifyUser(toUser, requestInformation, sessionManager);
+            channelHandlerContext.channel().writeAndFlush(answerPacket);
+
+        } catch (Exception e) {
+            System.out.println(e);
+            sendError(channelHandlerContext, messagePacket, e.getMessage());
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void removeFriend(ChannelHandlerContext channelHandlerContext, MessagePacket messagePacket, Long userId){
+        try {
+            Optional<User> toUserCheck = userRepository.findByName(messagePacket.getPayload().get("username").asText());
+            Optional<User> userCheck = userRepository.findById(userId);
+
+            if (toUserCheck.isEmpty() || userCheck.isEmpty()){
+                return;
+            }
+            User user = userCheck.get();
+            User toUser = toUserCheck.get();
+
+            Optional<Friendship> friendshipCheck = friendshipRepository.findByUserAndFriend(user, toUser);
+            if (friendshipCheck.isEmpty()){
+                return;
+            }
+            Friendship friendship = friendshipCheck.get();
+
+
+            boolean result = friendshipService.removeFriendship(friendship.getId());
+
+            MessagePacket answerPacket = new MessagePacket.Builder()
+                    .type(messagePacket.getType())
+                    .put("success", true)
+                    .put("requestId", messagePacket.getPayload().get("requestId").asText())
+                    .put("server_message", "Friendship deleted successfully")
+                    .put("removed", JsonConfig.MAPPER.writeValueAsString(user))
+                    .put("user", JsonConfig.MAPPER.writeValueAsString(toUser))
+                    .build();
+
+            MessagePacket requestInformation = new MessagePacket.Builder()
+                    .type(messagePacket.getType())
+                    .put("server_message", "Friendship deleted")
+                    .put("removed", JsonConfig.MAPPER.writeValueAsString(user))
+                    .put("user", JsonConfig.MAPPER.writeValueAsString(toUser))
+                    .build();
+
+            notifyUser(toUser, requestInformation, sessionManager);
+            channelHandlerContext.channel().writeAndFlush(answerPacket);
+
+        } catch (Exception e) {
+            System.out.println(e);
+            sendError(channelHandlerContext, messagePacket, e.getMessage());
+            throw new RuntimeException(e);
+        }
+    }
+
+
+    public void blockUser(ChannelHandlerContext channelHandlerContext, MessagePacket messagePacket, Long userId){
+        try {
+            Optional<User> blockedCheck = userRepository.findByName(messagePacket.getPayload().get("username").asText());
+            Optional<User> userCheck = userRepository.findById(userId);
+
+            if (blockedCheck.isEmpty() || userCheck.isEmpty()) {
+                return;
+            }
+            User user = userCheck.get();
+            User blocked = blockedCheck.get();
+
+            Friendship result = friendshipService.block(userId, blocked.getId());
+
+            MessagePacket answerPacket = new MessagePacket.Builder()
+                    .type(messagePacket.getType())
+                    .put("success", true)
+                    .put("requestId", messagePacket.getPayload().get("requestId").asText())
+                    .put("server_message", "Blocked successfully")
+                    .put("friendship", JsonConfig.MAPPER.writeValueAsString(result))
+                    .build();
+
+            MessagePacket requestInformation = new MessagePacket.Builder()
+                    .type(messagePacket.getType())
+                    .put("server_message", "You got blocked")
+                    .put("friendship", JsonConfig.MAPPER.writeValueAsString(result))
+                    .build();
+
+
+            notifyUser(blocked, requestInformation, sessionManager);
+            channelHandlerContext.channel().writeAndFlush(answerPacket);
+        } catch (Exception e) {
+            System.out.println(e);
+            sendError(channelHandlerContext, messagePacket, e.getMessage());
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void getRelatives(ChannelHandlerContext channelHandlerContext, MessagePacket messagePacket, Long userId){
+        try {
+            List<Friendship> friendships = friendshipService.listByUser(userId);
+            MessagePacket friendshipList = new MessagePacket.Builder()
+                    .type(messagePacket.getType())
+                    .put("success", true)
+                    .put("requestId", messagePacket.getPayload().get("requestId").asText())
+                    .put("server_message", "Got friendships list")
+                    .put("friendship_list", JsonConfig.MAPPER.writeValueAsString(friendships))
+                    .build();
+            channelHandlerContext.channel().writeAndFlush(friendshipList);
+
+        } catch (JsonProcessingException e) {
+            System.out.println(e);
+            sendError(channelHandlerContext, messagePacket, e.getMessage());
+            throw new RuntimeException(e);
+        }
+    }
+
+}

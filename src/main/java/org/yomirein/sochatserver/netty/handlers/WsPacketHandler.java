@@ -1,0 +1,122 @@
+package org.yomirein.sochatserver.netty.handlers;
+
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
+import lombok.RequiredArgsConstructor;
+import org.yomirein.sochatserver.auth.AuthHandler;
+import org.yomirein.sochatserver.chats.ChatHandler;
+import org.yomirein.sochatserver.chats.ChatService;
+import org.yomirein.sochatserver.messages.MessageHandler;
+import org.yomirein.sochatserver.messages.MessageRepository;
+import org.yomirein.sochatserver.messages.MessageService;
+import org.yomirein.sochatserver.sessions.SessionManager;
+import org.yomirein.sochatserver.common.models.MessagePacket;
+import org.yomirein.sochatserver.sessions.Session;
+import org.yomirein.sochatserver.common.repos.TrustKeysRepository;
+import org.yomirein.sochatserver.users.User;
+import org.yomirein.sochatserver.friendship.FriendsHandler;
+import org.yomirein.sochatserver.friendship.FriendshipRepository;
+import org.yomirein.sochatserver.users.UserRepository;
+import org.yomirein.sochatserver.friendship.FriendshipService;
+import org.yomirein.sochatserver.users.UserService;
+import org.yomirein.sochatserver.users.UsersHandler;
+import org.yomirein.sochatserver.utils.JwtService;
+
+import java.util.Optional;
+
+import static org.yomirein.sochatserver.utils.MessageSender.sendError;
+
+@RequiredArgsConstructor
+public class WsPacketHandler extends SimpleChannelInboundHandler<MessagePacket> {
+
+    private final SessionManager sessionManager;
+
+    private final UserRepository userRepository;
+    private final FriendshipRepository friendshipRepository;
+    private final TrustKeysRepository trustKeysRepository;
+    private final MessageRepository messageRepository;
+
+    private final FriendshipService friendshipService;
+    private final UserService userService;
+    private final ChatService chatService;
+    private final MessageService messageService;
+
+    @Override
+    protected void channelRead0(ChannelHandlerContext channelHandlerContext, MessagePacket messagePacket) throws Exception {
+
+        AuthHandler authHandler = new AuthHandler(userRepository,sessionManager);
+
+        FriendsHandler friendsHandler = new FriendsHandler(sessionManager, userRepository, friendshipRepository, friendshipService);
+        UsersHandler usersHandler = new UsersHandler(sessionManager, userRepository, trustKeysRepository, userService);
+        ChatHandler chatHandler = new ChatHandler(chatService, userService, sessionManager);
+        MessageHandler messageHandler = new MessageHandler(messageService, chatService, messageRepository, sessionManager);
+
+
+
+        switch (messagePacket.getType()) {
+            // PING PONG
+            case "ping": ping(channelHandlerContext.channel()); break;
+            case "authenticate": authHandler.authorize(channelHandlerContext, messagePacket); break;
+
+            // FRIENDSHIP SERVICE
+            case "friend_request": withAuth(channelHandlerContext, messagePacket, friendsHandler::requestSend); break;
+            case "friend_accept": withAuth(channelHandlerContext, messagePacket, friendsHandler::requestAccept); break;
+
+            case "friend_remove": withAuth(channelHandlerContext, messagePacket, friendsHandler::removeFriend); break;
+            case "block": withAuth(channelHandlerContext, messagePacket, friendsHandler::blockUser); break;
+            case "friend_decline": withAuth(channelHandlerContext, messagePacket, friendsHandler::requestDecline); break;
+
+            case "relatives_list": withAuth(channelHandlerContext, messagePacket, friendsHandler::getRelatives); break;
+
+            // USER SERVICE
+            case "user_get": withAuth(channelHandlerContext, messagePacket, usersHandler::getUser); break;
+
+
+            // CHAT MANAGEMENT
+            case "chat_create": withAuth(channelHandlerContext, messagePacket, chatHandler::createChat); break;
+            case "chat_list": withAuth(channelHandlerContext, messagePacket, chatHandler::getUserChats); break;
+            case "chat_get": withAuth(channelHandlerContext, messagePacket, chatHandler::getChat); break;
+            case "chat_delete": withAuth(channelHandlerContext, messagePacket, chatHandler::deleteChat); break;
+
+            // MESSAGE MANAGMENT
+            case "message_send": withAuth(channelHandlerContext, messagePacket, messageHandler::sendMessage); break;
+            case "message_edit": withAuth(channelHandlerContext, messagePacket, messageHandler::editMessage); break;
+            case "message_delete": withAuth(channelHandlerContext, messagePacket, messageHandler::deleteMessage); break;
+
+            case "message_list": withAuth(channelHandlerContext, messagePacket, messageHandler::getRecentMessages); break;
+            case "message_get": withAuth(channelHandlerContext, messagePacket, messageHandler::getMessage); break;
+
+        }
+    }
+
+    public void ping(Channel channel) {
+        MessagePacket packetMessage = new MessagePacket("pong");
+        packetMessage.payload.put("success", true);
+
+        channel.writeAndFlush(packetMessage);
+    }
+
+    private void withAuth(ChannelHandlerContext ctx, MessagePacket messagePacket, AuthenticatedHandler handler) throws Exception {
+        Long userId = null;
+
+        if (sessionManager.isAuthenticated(ctx.channel())) {
+            Session session = sessionManager.getSession(ctx.channel());
+            if (!JwtService.isTokenValid(session.getToken())) {
+                sendError(ctx, messagePacket, "invalid_token");
+                sessionManager.removeSession(ctx.channel());
+                return;
+            }
+            userId = session.getUser().getId();
+        }
+
+        handler.handle(ctx, messagePacket, userId);
+    }
+
+
+
+    @FunctionalInterface
+    private interface AuthenticatedHandler {
+        void handle(ChannelHandlerContext ctx, MessagePacket messagePacket, Long userId) throws Exception;
+    }
+}
