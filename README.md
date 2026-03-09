@@ -17,12 +17,12 @@ What was done / Что было сделано:
 | Feature   | Completion |
 | ---------- | ----- |
 | Authorization   | 🟨 |
-| Friendships | 🟨 |
-| Private Chats | 🟨 |
-| Voice calls | 🟧 |
-| Group chats | 🟥 |
-| Group voice calls | 🟥 |
+| Friendships | 🟧 |
+| Private Chats | 🟧 |
+| Group chats | 🟧 |
 | CDN Server | 🟥 |
+| Voice calls | 🟥 |
+| Group voice calls | 🟥 |
 | Auto setting server on first start | 🟥 |
 
 
