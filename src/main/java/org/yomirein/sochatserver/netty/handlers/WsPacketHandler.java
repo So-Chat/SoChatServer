@@ -32,28 +32,14 @@ public class WsPacketHandler extends SimpleChannelInboundHandler<MessagePacket> 
 
     private final SessionManager sessionManager;
 
-    private final UserRepository userRepository;
-    private final FriendshipRepository friendshipRepository;
-    private final TrustKeysRepository trustKeysRepository;
-    private final MessageRepository messageRepository;
-
-    private final FriendshipService friendshipService;
-    private final UserService userService;
-    private final ChatService chatService;
-    private final MessageService messageService;
+    private final AuthHandler authHandler;
+    private final FriendsHandler friendsHandler;
+    private final UsersHandler usersHandler;
+    private final ChatHandler chatHandler;
+    private final MessageHandler messageHandler;
 
     @Override
     protected void channelRead0(ChannelHandlerContext channelHandlerContext, MessagePacket messagePacket) throws Exception {
-
-        AuthHandler authHandler = new AuthHandler(userRepository,sessionManager);
-
-        FriendsHandler friendsHandler = new FriendsHandler(sessionManager, userRepository, friendshipRepository, friendshipService);
-        UsersHandler usersHandler = new UsersHandler(sessionManager, userRepository, trustKeysRepository, userService);
-        ChatHandler chatHandler = new ChatHandler(chatService, userService, sessionManager);
-        MessageHandler messageHandler = new MessageHandler(messageService, chatService, messageRepository, sessionManager);
-
-
-
         switch (messagePacket.getType()) {
             // PING PONG
             case "ping": ping(channelHandlerContext.channel()); break;
@@ -71,18 +57,25 @@ public class WsPacketHandler extends SimpleChannelInboundHandler<MessagePacket> 
 
             // USER SERVICE
             case "user_get": withAuth(channelHandlerContext, messagePacket, usersHandler::getUser); break;
-
+            case "user_update_profile": withAuth(channelHandlerContext, messagePacket, usersHandler::changeProfile); break;
 
             // CHAT MANAGEMENT
             case "chat_create": withAuth(channelHandlerContext, messagePacket, chatHandler::createChat); break;
             case "chat_list": withAuth(channelHandlerContext, messagePacket, chatHandler::getUserChats); break;
             case "chat_get": withAuth(channelHandlerContext, messagePacket, chatHandler::getChat); break;
-            case "chat_delete": withAuth(channelHandlerContext, messagePacket, chatHandler::deleteChat); break;
 
-            // MESSAGE MANAGMENT
+            case "chat_delete": withAuth(channelHandlerContext, messagePacket, chatHandler::deleteChat); break;
+            case "chat_leave": withAuth(channelHandlerContext, messagePacket, chatHandler::removeParticipant); break;
+
+            case "chat_get_users": withAuth(channelHandlerContext, messagePacket, chatHandler::getChatUsers); break;
+            case "chat_add_participant": withAuth(channelHandlerContext, messagePacket, chatHandler::addParticipant); break;
+
+            // MESSAGE MANAGEMENT
             case "message_send": withAuth(channelHandlerContext, messagePacket, messageHandler::sendMessage); break;
             case "message_edit": withAuth(channelHandlerContext, messagePacket, messageHandler::editMessage); break;
             case "message_delete": withAuth(channelHandlerContext, messagePacket, messageHandler::deleteMessage); break;
+
+            case "message_read": withAuth(channelHandlerContext, messagePacket, messageHandler::setLastReadMessage); System.out.println("t"); break;
 
             case "message_list": withAuth(channelHandlerContext, messagePacket, messageHandler::getRecentMessages); break;
             case "message_get": withAuth(channelHandlerContext, messagePacket, messageHandler::getMessage); break;
@@ -118,5 +111,10 @@ public class WsPacketHandler extends SimpleChannelInboundHandler<MessagePacket> 
     @FunctionalInterface
     private interface AuthenticatedHandler {
         void handle(ChannelHandlerContext ctx, MessagePacket messagePacket, Long userId) throws Exception;
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        cause.printStackTrace();
     }
 }

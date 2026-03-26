@@ -1,53 +1,282 @@
 package org.yomirein.sochatserver;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import org.yomirein.sochatserver.chats.ChatService;
-import org.yomirein.sochatserver.common.managers.ChallengeManager;
-import org.yomirein.sochatserver.messages.MessageRepository;
-import org.yomirein.sochatserver.messages.MessageService;
-import org.yomirein.sochatserver.sessions.SessionManager;
-import org.yomirein.sochatserver.netty.HttpServer;
-import org.yomirein.sochatserver.chats.ChatRepository;
-import org.yomirein.sochatserver.friendship.FriendshipRepository;
-import org.yomirein.sochatserver.common.repos.TrustKeysRepository;
-import org.yomirein.sochatserver.users.UserRepository;
-import org.yomirein.sochatserver.auth.AuthService;
-import org.yomirein.sochatserver.friendship.FriendshipService;
-import org.yomirein.sochatserver.users.UserService;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+import org.yomirein.sochatserver.utils.ConfigReader;
+
+import java.io.*;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.sql.*;
+import java.util.Map;
+import java.util.Properties;
+
 
 public class Main {
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
+        //
+        // TODO: Check compliance with the tables
+        //
 
-        ObjectMapper objectMapper = new ObjectMapper();
-        ObjectWriter objectWriter = objectMapper.writer().withDefaultPrettyPrinter();
+        databaseCheck();
 
-        ChallengeManager challengeManager = new ChallengeManager();
-        SessionManager sessionManager = new SessionManager();
+        try {
+            SoChat server = new SoChat();
+            server.run();
+        } catch (Exception e){
+            e.printStackTrace();
+        }
 
-        UserRepository userRepository = new UserRepository();
-        TrustKeysRepository trustKeysRepository = new TrustKeysRepository();
-        ChatRepository chatRepository = new ChatRepository();
-        FriendshipRepository friendshipRepository = new FriendshipRepository();
-        MessageRepository messageRepository = new MessageRepository();
+    }
 
-        AuthService authService = new AuthService(challengeManager, userRepository);
-        FriendshipService friendshipService = new FriendshipService(friendshipRepository, userRepository, trustKeysRepository);
-        UserService userService = new UserService(friendshipRepository, userRepository, trustKeysRepository);
-        ChatService chatService = new ChatService(userService, chatRepository);
-        MessageService messageService = new MessageService(messageRepository);
+    private static void databaseCheck() {
+        Map<String, String> propertiesMap = ConfigReader.getConfig();
+        Properties properties = new Properties();
+        URI uri = null;
+        try {
+            uri = ConfigReader.class.getProtectionDomain().getCodeSource().getLocation().toURI();
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
+        String absolutePath = new File(uri).getParent();
 
-        HttpServer httpServer = new HttpServer(authService, friendshipService, userService, chatService, messageService,
-                challengeManager, sessionManager,
-                trustKeysRepository, userRepository, friendshipRepository, messageRepository, 8081);
+        if (propertiesMap.containsKey("db.url")) {
+            System.out.println("Config already contains Database info, skipping setup...");
+            return;
+        }
 
-        new Thread(() -> {
-            try {
-                httpServer.run();
-            } catch (Exception e) {
-                e.printStackTrace();
+        DbInput input = readDbInput();
+
+        try (HikariDataSource ds = dataSourceFactory(input.ipPort, "", input.user, input.password);) {
+
+            String dbName = resolveDatabase(ds, input, properties);
+
+            saveConfig(properties, input, dbName);
+
+        } catch (Exception e) {
+            System.out.println("Exit with error: " + e);
+        }
+    }
+
+    private static void saveConfig(Properties prop, DbInput input, String dbName) {
+        prop.setProperty("db.url", input.ipPort);
+        prop.setProperty("db.username", input.user);
+        prop.setProperty("db.password", input.password);
+        prop.setProperty("db.name", dbName);
+
+        try (OutputStream out = new FileOutputStream("config.properties")) {
+            prop.store(out, "");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static class DbInput {
+        String ipPort;
+        String user;
+        String password;
+    }
+
+    private static DbInput readDbInput() {
+        BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+
+        DbInput input = new DbInput();
+
+        System.out.println("Type server Ip:Port (localhost:5432): ");
+        input.ipPort = readLine(in, "localhost:5432");
+
+        System.out.println("Type psql root username (postgres): ");
+        input.user = readLine(in, "postgres");
+
+        System.out.println("Type psql root password: ");
+        input.password = readLine(in, "");
+
+        return input;
+    }
+
+    private static String resolveDatabase(
+            HikariDataSource ds,
+            DbInput input,
+            Properties properties
+    ) throws Exception {
+
+        try (Connection con = ds.getConnection()) {
+
+            PreparedStatement ps =
+                    con.prepareStatement("SELECT 1 FROM pg_database WHERE datname = ?");
+            ps.setString(1, "sochat");
+
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                System.out.println("Database exists, using database with default name\n(if you don't want this database change in config.properties or delete to start setup)");
+                return "sochat";
             }
-        }).start();
 
+            System.out.println("Database not found.");
+
+            BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+            System.out.println("1 - use existing, 2 - create new (default 2)");
+            int option = Integer.parseInt(readLine(in, "2"));
+
+            System.out.println("Database name (sochat): ");
+            String dbName = readLine(in, "sochat");
+
+            if (option == 2) {
+                createDatabase(dbName, ds, properties);
+                initTypes(ds);
+                initColumns(ds);
+            }
+
+            return dbName;
+        }
+    }
+
+    private static void createDatabase(String name, HikariDataSource ds, Properties properties) {
+        try (Connection con = ds.getConnection()) {
+            Statement st = con.createStatement();
+            st.executeUpdate("CREATE DATABASE  " + name);
+
+            properties.setProperty("db.name", name);
+            System.out.println("Created database successfully");
+
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+    public static void initTypes(HikariDataSource ds) {
+        try (Connection con = ds.getConnection()) {
+            Statement st = con.createStatement();
+            st.executeUpdate(""" 
+                CREATE TYPE chat_role AS ENUM ('MEMBER', 'ADMIN','OWNER');
+            """);
+
+            st.executeUpdate("""
+                CREATE TYPE chat_type AS ENUM ('PRIVATE', 'GROUP_INSECURE','GROUP_SECURE', 'CHANNEL');
+            """);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    public static void initColumns(HikariDataSource ds) {
+        try (Connection con = ds.getConnection()) {
+            Statement st = con.createStatement();
+
+            st.executeUpdate("""
+                CREATE TABLE users (
+                    id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                    nickname varchar(255),
+                    username varchar(255) NOT NULL UNIQUE,
+                    description TEXT,
+                    ed25519_public_key text NOT NULL,
+                    x25519_public_key text NOT NULL
+                );
+            """);
+
+            st.executeUpdate("""
+                CREATE TABLE friendship (
+                    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                    user_id BIGINT NOT NULL,
+                    friend_id BIGINT NOT NULL,
+                    status VARCHAR(255) NOT NULL,
+                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                    FOREIGN KEY (friend_id) REFERENCES users(id) ON DELETE CASCADE,
+                    UNIQUE (user_id, friend_id)
+                );
+            """);
+
+            st.executeUpdate("""
+                CREATE TABLE trust_keys (
+                    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                    user_id BIGINT NOT NULL,
+                    fn_owner_id BIGINT NOT NULL,
+                    fingerprint TEXT NOT NULL,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                );
+            """
+            );
+
+            st.executeUpdate("""
+                CREATE TABLE chat (
+                    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                    type chat_type NOT NULL,
+                    title TEXT,
+            
+                    CHECK (
+                        (type = 'PRIVATE' AND title IS NULL) OR
+                        (type IN ('GROUP_SECURE','GROUP_INSECURE', 'CHANNEL') AND title IS NOT NULL)
+                    )
+                );
+            """);
+
+            st.executeUpdate("""
+                CREATE TABLE message (
+                    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                    chat_id BIGINT NOT NULL,
+                    sender_id BIGINT NOT NULL,
+                    reply_message_id BIGINT,
+                    content TEXT NOT NULL,
+                    timestamp TIMESTAMP NOT NULL,
+                    message TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    key_version TEXT NOT NULL,
+                    FOREIGN KEY (chat_id) REFERENCES chat(id) ON DELETE CASCADE,
+                    FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
+                    FOREIGN KEY (reply_message_id) REFERENCES message(id) ON DELETE SET NULL
+                );
+            """);
+            st.executeUpdate("""
+                CREATE TABLE chat_participants (
+                    chat_id BIGINT NOT NULL,
+                    user_id BIGINT NOT NULL,
+                    role chat_role NOT NULL,
+                    last_read_message_id BIGINT NOT NULL DEFAULT 0,
+                    PRIMARY KEY (chat_id, user_id)
+                );
+            """);
+
+            st.executeUpdate("""
+                CREATE TABLE chat_sender_keys(
+                    chat_id BIGINT NOT NULL,
+                    user_id BIGINT NOT NULL,
+                    key_version BIGINT NOT NULL,
+                    chat_key TEXT NOT NULL,
+                    PRIMARY KEY (chat_id, user_id, key_version),
+                    FOREIGN KEY (chat_id) REFERENCES chat(id) ON DELETE CASCADE,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                );
+            """);
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static HikariDataSource dataSourceFactory(String ipPort, String dbName, String psqlName, String psqlPassword){
+        HikariConfig cfg = new HikariConfig();
+        cfg.setJdbcUrl("jdbc:postgresql://" + ipPort + "/" + dbName);
+        cfg.setUsername(psqlName);
+        cfg.setPassword(psqlPassword);
+
+        cfg.setMaximumPoolSize(10);
+        cfg.setMinimumIdle(2);
+        cfg.setPoolName("app-pool");
+        cfg.addDataSourceProperty("cachePrepStmts", "true");
+        cfg.addDataSourceProperty("prepStmtCacheSize", "250");
+        cfg.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+
+        return new HikariDataSource(cfg);
+    }
+
+
+    private static String readLine(BufferedReader in, String prompt) {
+        try {
+            String input = in.readLine();
+            if (!input.isEmpty()) { return input; }
+            else { return prompt; }
+        } catch (IOException _) { return prompt; }
     }
 }

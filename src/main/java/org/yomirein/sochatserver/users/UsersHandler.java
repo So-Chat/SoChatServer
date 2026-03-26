@@ -58,6 +58,46 @@ public class UsersHandler {
         }
     }
 
+    public void changeProfile(ChannelHandlerContext channelHandlerContext, MessagePacket messagePacket, Long userId) {
+        try {
+
+            String username = messagePacket.payload.has("username") && !messagePacket.payload.get("username").isNull()
+                    ? messagePacket.payload.get("username").asText()
+                    : null;
+
+            String nickname = messagePacket.payload.has("nickname") && !messagePacket.payload.get("nickname").isNull()
+                    ? messagePacket.payload.get("nickname").asText()
+                    : null;
+
+            String description = messagePacket.payload.has("description") && !messagePacket.payload.get("description").isNull()
+                    ? messagePacket.payload.get("description").asText()
+                    : null;
+            
+            boolean result = userService.changeProfile(userId, username, nickname, description);
+            User user = userService.getUser(userId);
+
+
+            MessagePacket answerPacket = new MessagePacket.Builder()
+                    .type(messagePacket.getType())
+                    .put("success", true)
+                    .put("requestId", messagePacket.getPayload().get("requestId").asText())
+                    .put("server_message", "Changed profile successfully")
+                    .put("username", user.getUsername())
+                    .put("nickname", user.getNickname())
+                    .put("description", user.getDescription())
+                    .build();
+
+            notifyUser(user, answerPacket);
+            
+
+        } catch (Exception e) {
+            System.out.println(e);
+            sendError(channelHandlerContext, messagePacket, e.getMessage());
+            throw new RuntimeException(e);
+        }
+    }
+
+
     private void sendError(ChannelHandlerContext ctx,
                            MessagePacket request,
                            String errorMessage) {
@@ -79,5 +119,4 @@ public class UsersHandler {
         for (Session session : sessions)
             session.getChannel().writeAndFlush(packet);
     }
-
 }

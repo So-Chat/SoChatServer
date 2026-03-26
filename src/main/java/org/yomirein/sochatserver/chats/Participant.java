@@ -13,4 +13,12 @@ public class Participant {
     private Long chatId;
     private long userId;
     private ChatRole chatRole;
+
+    private long lastMessageId = 0;
+
+    public Participant(Long chatId, long userId, ChatRole chatRole) {
+        this.chatId = chatId;
+        this.userId = userId;
+        this.chatRole = chatRole;
+    }
 }

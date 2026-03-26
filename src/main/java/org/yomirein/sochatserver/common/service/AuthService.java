@@ -1,4 +1,4 @@
-package org.yomirein.sochatserver.auth;
+package org.yomirein.sochatserver.common.service;
 
 import org.yomirein.sochatserver.utils.JsonConfig;
 import org.yomirein.sochatserver.utils.JwtService;
@@ -43,7 +43,7 @@ public class AuthService {
                     .build();
         }
         else{
-            return authResponse("login", false, "User is not valid");
+            return authResponse("login", false, "User is not valid2");
         }
     }
 

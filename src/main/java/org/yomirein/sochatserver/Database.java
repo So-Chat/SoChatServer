@@ -2,18 +2,20 @@ package org.yomirein.sochatserver;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import org.yomirein.sochatserver.utils.ConfigReader;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 
 public class Database {
+
     private static final HikariDataSource ds;
 
     static {
         HikariConfig cfg = new HikariConfig();
-        cfg.setJdbcUrl("jdbc:postgresql://localhost:5432/servername");
-        cfg.setUsername("username");
-        cfg.setPassword("password");
+        cfg.setJdbcUrl("jdbc:postgresql://" + ConfigReader.getConfig().get("db.url") + "/" + ConfigReader.getConfig().get("db.name"));
+        cfg.setUsername(ConfigReader.getConfig().get("db.username"));
+        cfg.setPassword(ConfigReader.getConfig().get("db.password"));
         cfg.setMaximumPoolSize(10);
         cfg.setMinimumIdle(2);
         cfg.setPoolName("app-pool");

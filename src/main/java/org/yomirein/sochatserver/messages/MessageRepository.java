@@ -1,6 +1,7 @@
 package org.yomirein.sochatserver.messages;
 
 import org.yomirein.sochatserver.Database;
+import org.yomirein.sochatserver.chats.Participant;
 
 import java.sql.*;
 import java.time.LocalDateTime;
@@ -12,6 +13,20 @@ public class MessageRepository {
 
     public Optional<Message> findById(Long id) {
         String sql = "SELECT id, chat_id, sender_id, reply_message_id, content, timestamp, key_version FROM message WHERE id = ?";
+        try (Connection c = Database.getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setLong(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) return Optional.empty();
+                return Optional.of(mapMessage(rs));
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public Optional<Message> findLastById(Long id) {
+        String sql = "SELECT id, chat_id, sender_id, reply_message_id, content, timestamp, key_version FROM message WHERE chat_id = ? ORDER BY timestamp DESC LIMIT 1";
         try (Connection c = Database.getConnection();
              PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setLong(1, id);
@@ -81,6 +96,42 @@ public class MessageRepository {
             throw new RuntimeException(e);
         }
     }
+
+    public List<Message> findUnreadByChatIdOrderByTimestampDesc(Long chatId) {
+        String sql = "SELECT COUNT(m.*)" +
+                "FROM message AS m " +
+                "JOIN chat_participants AS p ON m.chat_id = p.chat_id AND p.user_id = 56 " +
+                "WHERE m.chat_id = 1 AND m.id > p.last_read_message_id " +
+                "ORDER BY m.timestamp DESC";
+        List<Message> out = new ArrayList<>();
+        try (Connection c = Database.getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setLong(1, chatId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) out.add(mapMessage(rs));
+            }
+            return out;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
+    public Participant setReadLastMessage(Participant participant) {
+        String sql = "UPDATE public.chat_participants SET last_read_message_id=? WHERE chat_id = ? AND user_id = ?";
+        try (Connection c = Database.getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setLong(1, participant.getLastMessageId());
+            ps.setLong(2, participant.getChatId());
+            ps.setLong(3, participant.getUserId());
+            ps.executeUpdate();
+
+            return participant;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 
     public Message save(Message m) {
         String sql = "INSERT INTO message(chat_id, sender_id, reply_message_id, content, timestamp, key_version) VALUES (?, ?, ?, ?, ?, ?) RETURNING id, timestamp";

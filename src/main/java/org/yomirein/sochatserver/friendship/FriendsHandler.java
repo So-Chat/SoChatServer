@@ -8,6 +8,7 @@ import org.yomirein.sochatserver.common.models.MessagePacket;
 import org.yomirein.sochatserver.sessions.Session;
 import org.yomirein.sochatserver.users.User;
 import org.yomirein.sochatserver.users.UserRepository;
+import org.yomirein.sochatserver.users.UserService;
 import org.yomirein.sochatserver.utils.JsonConfig;
 import org.yomirein.sochatserver.utils.MessageSender;
 
@@ -27,20 +28,14 @@ public class FriendsHandler {
     private final FriendshipRepository friendshipRepository;
 
     private final FriendshipService friendshipService;
-
+    private final UserService userService;
 
     public void requestSend(ChannelHandlerContext channelHandlerContext, MessagePacket messagePacket, Long userId) {
         try {
-            Optional<User> toUserCheck = userRepository.findByName(messagePacket.getPayload().get("username").asText());
-            Optional<User> userCheck = userRepository.findById(userId);
+            User toUser = userService.getUser(messagePacket.getPayload().get("username").asText());
+            User user = userService.getUser(userId);
 
-            if (toUserCheck.isEmpty() || userCheck.isEmpty()){
-                return;
-            }
-            User user = userCheck.get();
-            User toUser = toUserCheck.get();
-
-            if (user == toUser){
+            if (toUser == user){
                 MessagePacket answerPacket = new MessagePacket.Builder()
                         .type(messagePacket.getType())
                         .put("success", false)
@@ -83,14 +78,8 @@ public class FriendsHandler {
         try {
             String fingerprint = messagePacket.getPayload().get("fingerprint").asText();
 
-            Optional<User> toUserCheck = userRepository.findByName(messagePacket.getPayload().get("username").asText());
-            Optional<User> userCheck = userRepository.findById(userId);
-
-            if (toUserCheck.isEmpty() || userCheck.isEmpty()){
-                return;
-            }
-            User user = userCheck.get();
-            User toUser = toUserCheck.get();
+            User toUser = userService.getUser(messagePacket.getPayload().get("username").asText());
+            User user = userService.getUser(userId);
 
             Optional<Friendship> friendshipCheck = friendshipRepository.findByUserAndFriend(user, toUser);
             if (friendshipCheck.isEmpty()){
@@ -137,14 +126,8 @@ public class FriendsHandler {
 
     public void requestDecline(ChannelHandlerContext channelHandlerContext, MessagePacket messagePacket, Long userId){
         try {
-            Optional<User> toUserCheck = userRepository.findByName(messagePacket.getPayload().get("username").asText());
-            Optional<User> userCheck = userRepository.findById(userId);
-
-            if (toUserCheck.isEmpty() || userCheck.isEmpty()){
-                return;
-            }
-            User user = userCheck.get();
-            User toUser = toUserCheck.get();
+            User toUser = userService.getUser(messagePacket.getPayload().get("username").asText());
+            User user = userService.getUser(userId);
 
             Optional<Friendship> friendshipCheck = friendshipRepository.findByUserAndFriend(user, toUser);
             if (friendshipCheck.isEmpty()){
@@ -183,21 +166,14 @@ public class FriendsHandler {
 
     public void removeFriend(ChannelHandlerContext channelHandlerContext, MessagePacket messagePacket, Long userId){
         try {
-            Optional<User> toUserCheck = userRepository.findByName(messagePacket.getPayload().get("username").asText());
-            Optional<User> userCheck = userRepository.findById(userId);
-
-            if (toUserCheck.isEmpty() || userCheck.isEmpty()){
-                return;
-            }
-            User user = userCheck.get();
-            User toUser = toUserCheck.get();
+            User toUser = userService.getUser(messagePacket.getPayload().get("username").asText());
+            User user = userService.getUser(userId);
 
             Optional<Friendship> friendshipCheck = friendshipRepository.findByUserAndFriend(user, toUser);
             if (friendshipCheck.isEmpty()){
                 return;
             }
             Friendship friendship = friendshipCheck.get();
-
 
             boolean result = friendshipService.removeFriendship(friendship.getId());
 
@@ -230,14 +206,8 @@ public class FriendsHandler {
 
     public void blockUser(ChannelHandlerContext channelHandlerContext, MessagePacket messagePacket, Long userId){
         try {
-            Optional<User> blockedCheck = userRepository.findByName(messagePacket.getPayload().get("username").asText());
-            Optional<User> userCheck = userRepository.findById(userId);
-
-            if (blockedCheck.isEmpty() || userCheck.isEmpty()) {
-                return;
-            }
-            User user = userCheck.get();
-            User blocked = blockedCheck.get();
+            User blocked = userService.getUser(messagePacket.getPayload().get("username").asText());
+            User user = userService.getUser(userId);
 
             Friendship result = friendshipService.block(userId, blocked.getId());
 

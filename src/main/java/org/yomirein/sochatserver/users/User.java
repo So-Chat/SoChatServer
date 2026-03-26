@@ -17,7 +17,13 @@ public class User {
     private long id;
 
     @Getter @Setter
+    private String nickname;
+
+    @Getter @Setter
     private String username;
+
+    @Getter @Setter
+    private String description;
 
     @Getter @Setter
     @JsonSerialize(using = PublicKeySerializer.class)
@@ -27,9 +33,31 @@ public class User {
     @JsonSerialize(using = PublicKeySerializer.class)
     private PublicKey x25519PublicKey;
 
+    public User(String nickname, String username, String description, PublicKey ed25519PublicKey, PublicKey x25519PublicKey) {
+        this.nickname = nickname;
+        this.username = username;
+        this.description = description;
+        this.ed25519PublicKey = ed25519PublicKey;
+        this.x25519PublicKey = x25519PublicKey;
+    }
+
+    public User(String username, String description, PublicKey ed25519PublicKey, PublicKey x25519PublicKey) {
+        this.username = username;
+        this.description = description;
+        this.ed25519PublicKey = ed25519PublicKey;
+        this.x25519PublicKey = x25519PublicKey;
+    }
+
     public User(String username, PublicKey ed25519PublicKey, PublicKey x25519PublicKey) {
         this.username = username;
         this.ed25519PublicKey = ed25519PublicKey;
         this.x25519PublicKey = x25519PublicKey;
+    }
+
+    public String getNickname() {
+        if (nickname == null) {
+            return username;
+        }
+        return nickname;
     }
 }

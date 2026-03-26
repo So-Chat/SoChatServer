@@ -15,7 +15,11 @@ import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.yomirein.sochatserver.auth.AuthHandler;
+import org.yomirein.sochatserver.chats.ChatHandler;
 import org.yomirein.sochatserver.chats.ChatService;
+import org.yomirein.sochatserver.friendship.FriendsHandler;
+import org.yomirein.sochatserver.messages.MessageHandler;
 import org.yomirein.sochatserver.messages.MessageRepository;
 import org.yomirein.sochatserver.messages.MessageService;
 import org.yomirein.sochatserver.sessions.SessionManager;
@@ -30,6 +34,7 @@ import org.yomirein.sochatserver.users.UserRepository;
 import org.yomirein.sochatserver.auth.AuthService;
 import org.yomirein.sochatserver.friendship.FriendshipService;
 import org.yomirein.sochatserver.users.UserService;
+import org.yomirein.sochatserver.users.UsersHandler;
 
 
 public class HttpServer {
@@ -37,39 +42,29 @@ public class HttpServer {
     private final int port;
 
     private final AuthService authService;
-    private final FriendshipService friendshipService;
-    private final UserService userService;
-    private final ChatService chatService;
-    private final MessageService messageService;
-
-    private final ChallengeManager challengeManager;
     private final SessionManager sessionManager;
 
-    private final TrustKeysRepository trustKeysRepository;
-    private final UserRepository userRepository;
-    private final FriendshipRepository friendshipRepository;
-    private final MessageRepository messageRepository;
+    private final AuthHandler authHandler;
+    private final FriendsHandler friendsHandler;
+    private final UsersHandler usersHandler;
+    private final ChatHandler chatHandler;
+    private final MessageHandler messageHandler;
 
     private final Logger logger = LoggerFactory.getLogger(HttpServer.class);
 
 
-    public HttpServer(AuthService authService, FriendshipService friendshipService, UserService userService, ChatService chatService, MessageService messageService,
-                      ChallengeManager challengeManager, SessionManager sessionManager,
-                      TrustKeysRepository trustKeysRepository, UserRepository userRepository, FriendshipRepository friendshipRepository, MessageRepository messageRepository,
-                      int port) {
+    public HttpServer(AuthService authService, SessionManager sessionManager,
+                      AuthHandler authHandler, FriendsHandler friendsHandler,
+                      UsersHandler usersHandler, ChatHandler chatHandler,
+                      MessageHandler messageHandler, int port) {
         this.authService = authService;
-        this.friendshipService = friendshipService;
-        this.userService = userService;
-        this.chatService = chatService;
-        this.messageService = messageService;
-
-        this.challengeManager = challengeManager;
         this.sessionManager = sessionManager;
 
-        this.trustKeysRepository = trustKeysRepository ;
-        this.userRepository = userRepository;
-        this.friendshipRepository = friendshipRepository;
-        this.messageRepository = messageRepository;
+        this.authHandler = authHandler;
+        this.friendsHandler = friendsHandler;
+        this.usersHandler = usersHandler;
+        this.chatHandler = chatHandler;
+        this.messageHandler = messageHandler;
 
         this.port = port;
     }
@@ -110,9 +105,8 @@ public class HttpServer {
                             p.addLast(new HttpPacketHandler(authService));
 
                             p.addLast(new PacketDecoder());
-                            p.addLast(new WsPacketHandler(sessionManager,
-                                    userRepository, friendshipRepository, trustKeysRepository, messageRepository,
-                                    friendshipService, userService, chatService, messageService));
+                            p.addLast(new WsPacketHandler(sessionManager, authHandler,
+                                    friendsHandler, usersHandler, chatHandler, messageHandler));
                             p.addLast(new PacketEncoder());
                         }
                     });

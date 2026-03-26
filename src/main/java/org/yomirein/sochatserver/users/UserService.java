@@ -5,6 +5,8 @@ import lombok.RequiredArgsConstructor;
 import org.yomirein.sochatserver.friendship.FriendshipRepository;
 import org.yomirein.sochatserver.common.repos.TrustKeysRepository;
 
+import java.util.List;
+
 @RequiredArgsConstructor
 public class UserService {
     private final FriendshipRepository friendshipRepository;
@@ -26,5 +28,15 @@ public class UserService {
             throw new RuntimeException(e);
         }
     }
+
+    public boolean changeProfile(Long userId, String username, String nickname, String description) {
+        try{
+            return userRepository.updateUser(userId, username, nickname, description);
+        }catch (RuntimeException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
 
 }

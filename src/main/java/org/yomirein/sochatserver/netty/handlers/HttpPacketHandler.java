@@ -53,7 +53,6 @@ public class HttpPacketHandler extends SimpleChannelInboundHandler<FullHttpReque
                     : HttpResponseStatus.NOT_ACCEPTABLE;
 
             sendJson(channelHandlerContext, challengeStatus, JsonConfig.MAPPER.writeValueAsString(challengeResponse));
-
         }
 
 

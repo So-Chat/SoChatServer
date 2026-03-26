@@ -6,9 +6,11 @@ import io.netty.channel.ChannelHandlerContext;
 import lombok.RequiredArgsConstructor;
 import org.yomirein.sochatserver.chats.Chat;
 import org.yomirein.sochatserver.chats.ChatService;
+import org.yomirein.sochatserver.chats.Participant;
 import org.yomirein.sochatserver.common.models.MessagePacket;
 import org.yomirein.sochatserver.sessions.SessionManager;
 import org.yomirein.sochatserver.users.User;
+import org.yomirein.sochatserver.users.UserService;
 import org.yomirein.sochatserver.utils.JsonConfig;
 
 import java.util.List;
@@ -21,6 +23,7 @@ public class MessageHandler {
 
     private final MessageService messageService;
     private final ChatService chatService;
+    private final UserService userService;
 
     private final MessageRepository messageRepository;
 
@@ -39,13 +42,17 @@ public class MessageHandler {
                 replyMessageId = replyNode.asLong();
             }
 
-
-            List<User> chatMembers = new java.util.ArrayList<>(chatService.getChat(chatId).
-                    getParticipantsWithKeys().keySet().stream().toList());
-            chatMembers.removeIf(user -> user.getId() == userId);
+            Chat chat = chatService.getChat(chatId);
+            chat.setParticipants(chatService.getParticipantList(chatId));
 
 
-            Message message = messageService.addMessage(userId, chatId, content, replyMessageId);
+            List<User> chatMembers = chat.getParticipants().stream()
+                    .map(p -> userService.getUser(p.getUserId()))
+                    .filter(user -> user.getId() != userId)
+                    .toList();
+
+
+            Message message = messageService.addMessage(userId, chatId, content, replyMessageId, chatService.getCurrentKeyVersion(chatId));
 
             MessagePacket answerPacket = new MessagePacket.Builder()
                     .type(messagePacket.getType())
@@ -96,10 +103,11 @@ public class MessageHandler {
 
     public void getRecentMessages(ChannelHandlerContext channelHandlerContext, MessagePacket messagePacket, Long userId){
         try {
-            int limit = messagePacket.getPayload().get("limit").asInt();
+            System.out.println(messagePacket.getPayload());
+            int offset = messagePacket.getPayload().get("offset").asInt();
             long chatId = messagePacket.getPayload().get("chatId").asLong();
 
-            List<Message> messages = messageService.getRecentMessages(chatId, limit);
+            List<Message> messages = messageService.getRecentMessages(chatId, offset);
 
             MessagePacket answerPacket = new MessagePacket.Builder()
                     .type(messagePacket.getType())
@@ -118,6 +126,53 @@ public class MessageHandler {
         }
     }
 
+    public void setLastReadMessage(ChannelHandlerContext channelHandlerContext, MessagePacket messagePacket, Long userId) {
+        try {
+            long messageId = messagePacket.getPayload().get("id").asLong();
+            Message message = messageService.getMessage(messageId);
+
+            Chat chat = chatService.getChat(message.getChatId());
+            chat.setParticipants(chatService.getParticipantList(message.getChatId()));
+
+            List<User> chatMembers = chat.getParticipants().stream()
+                    .map(p -> userService.getUser(p.getUserId()))
+                    .filter(user -> user.getId() != userId)
+                    .toList();
+
+            Participant participant = chat.getParticipants().stream().filter(u -> u.getUserId() == userId).findFirst().orElse(null);
+            if (participant == null) {
+                sendError(channelHandlerContext, messagePacket, "User does not contains in chat");
+                return;
+            }
+            participant.setLastMessageId(messageId);
+            Participant result = messageService.setLastReadMessage(participant);
+
+            MessagePacket answerPacket = new MessagePacket.Builder()
+                    .type(messagePacket.getType())
+                    .put("success", true)
+                    .put("requestId", messagePacket.getPayload().get("requestId").asText())
+                    .put("server_message", "You read message successfully")
+                    .put("participant", JsonConfig.MAPPER.writeValueAsString(result))
+                    .build();
+
+            MessagePacket requestInformation = new MessagePacket.Builder()
+                    .type(messagePacket.getType())
+                    .put("server_message", "User read message successfully")
+                    .put("participant", JsonConfig.MAPPER.writeValueAsString(result))
+                    .build();
+
+            notifyUser(userService.getUser(userId), answerPacket, sessionManager);
+            for (User member : chatMembers) {
+                notifyUser(member, requestInformation, sessionManager);
+            }
+        } catch (Exception e) {
+            System.out.println(e);
+            sendError(channelHandlerContext, messagePacket, e.getMessage());
+            throw new RuntimeException(e);
+        }
+    }
+
+
     public void editMessage(ChannelHandlerContext channelHandlerContext, MessagePacket messagePacket, Long userId){
         try {
             String content = messagePacket.getPayload().get("content").asText();
@@ -127,9 +182,13 @@ public class MessageHandler {
 
             Message oldMessage = messageService.getMessage(messageId);
 
-            List<User> chatMembers = chatService.getChat(oldMessage.getChatId()).
-                    getParticipantsWithKeys().keySet().stream().toList();
-            chatMembers.removeIf(user -> user.getId() == userId);
+            Chat chat = chatService.getChat(oldMessage.getChatId());
+            chat.setParticipants(chatService.getParticipantList(oldMessage.getChatId()));
+
+            List<User> chatMembers = chat.getParticipants().stream()
+                    .map(p -> userService.getUser(p.getUserId()))
+                    .filter(user -> user.getId() != userId)
+                    .toList();
 
             Message message = messageService.editMessage(messageId, content);
 
@@ -163,9 +222,13 @@ public class MessageHandler {
             long messageId = messagePacket.getPayload().get("id").asLong();
             Message message = messageService.getMessage(messageId);
 
-            List<User> chatMembers = chatService.getChat(message.getChatId()).
-                    getParticipantsWithKeys().keySet().stream().toList();
-            chatMembers.removeIf(user -> user.getId() == userId);
+            Chat chat = chatService.getChat(message.getChatId());
+            chat.setParticipants(chatService.getParticipantList(message.getChatId()));
+
+            List<User> chatMembers = chat.getParticipants().stream()
+                    .map(p -> userService.getUser(p.getUserId()))
+                    .filter(user -> user.getId() != userId)
+                    .toList();
 
 
             boolean result = messageService.deleteMessage(messageId);
