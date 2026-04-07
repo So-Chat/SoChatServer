@@ -22,8 +22,7 @@ import static org.yomirein.sochatserver.utils.MessageSender.sendError;
 @RequiredArgsConstructor
 public class FriendsHandler {
 
-    private final SessionManager sessionManager;
-
+    private final SessionManager sessionManager;//test
     private final UserRepository userRepository;
     private final FriendshipRepository friendshipRepository;
 
