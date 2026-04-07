@@ -9,6 +9,10 @@ import java.sql.SQLException;
 
 public class Database {
 
+    // Nothing interesting here actually
+    // Connecting to database using config data(it going after Main.java where it inits)
+    // It static so we can easily use it in every repository we want
+
     private static final HikariDataSource ds;
 
     static {

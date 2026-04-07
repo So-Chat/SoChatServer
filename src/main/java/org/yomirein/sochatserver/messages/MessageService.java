@@ -14,11 +14,9 @@ public class MessageService {
 
     private final MessageRepository messageRepository;
 
+    // Adding message to Database with arguments
     public Message addMessage(long senderId, long chatId, String content, Long replyMessageId, int keyVersion){
         try {
-            // TODO: make checking for chat existence
-            // TODO: check if user in chat
-
             Message message = new Message();
 
             message.setChatId(chatId);
@@ -27,7 +25,6 @@ public class MessageService {
 
             message.setContent(content);
 
-            // TODO: make getting chats current Key Version for setting(its 0 for now)
             message.setKeyVersion(keyVersion);
 
             return messageRepository.save(message);
@@ -38,6 +35,7 @@ public class MessageService {
     }
 
 
+    // Get messages by id
     public Message getMessage(long messageId){
         try{
             return messageRepository.findById(messageId).orElseThrow(() -> new RuntimeException("Message not found"));
@@ -47,6 +45,7 @@ public class MessageService {
     }
 
 
+    // Get ALL messages by id (didn't used because it will create load on big chats)
     public List<Message> getChatMessages(long chatId){
         try{
             return messageRepository.findByChatId(chatId);
@@ -55,6 +54,7 @@ public class MessageService {
         }
     }
 
+    // Setting last read message by participant
     public Participant setLastReadMessage(Participant participant){
         try {
             return messageRepository.setReadLastMessage(participant);
@@ -63,6 +63,7 @@ public class MessageService {
         }
     }
 
+    // Get last 20 messages from chat using chat id and it's offset
     public List<Message> getRecentMessages(long chatId, int offset){
         try{
             return messageRepository.findByChatIdOrderByTimestampDesc(chatId, offset, 20);
@@ -71,6 +72,7 @@ public class MessageService {
         }
     }
 
+    // Get last message by just chat id
     public Message getLastMessage(long chatId){
         try {
             Optional<Message> messageOptional = messageRepository.findLastById(chatId);
@@ -80,6 +82,7 @@ public class MessageService {
         }
     }
 
+    // Edit message with new content
     public Message editMessage(long messageId, String content){
         try{
             Message message = getMessage(messageId);
@@ -91,6 +94,7 @@ public class MessageService {
         }
     }
 
+    // Delete message by id
     public boolean deleteMessage(long messageId){
         try{
             Message message = getMessage(messageId);
@@ -99,7 +103,5 @@ public class MessageService {
             throw new RuntimeException(e);
         }
     }
-
-
 
 }

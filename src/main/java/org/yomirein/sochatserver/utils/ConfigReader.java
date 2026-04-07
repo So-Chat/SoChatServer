@@ -10,10 +10,18 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
+
+// Config reader
+// For now it uses only for database
 public class ConfigReader {
+
+    // It has only method for getting config
+
     public static Map<String, String> getConfig() {
+        // Create config Map<String, String> that will contain our config data
         Map<String, String> config = new HashMap<>();
 
+        // Getting our built server .jar file location
         try {
             String basePath = new File(
                     ConfigReader.class.getProtectionDomain()
@@ -22,8 +30,10 @@ public class ConfigReader {
                             .toURI()
             ).getParent();
 
+            // Getting config.properties location
             Path configPath = Paths.get(basePath, "config.properties");
 
+            // If it not exists create it
             if (Files.notExists(configPath)) {
                 Files.createDirectories(configPath.getParent());
                 Files.createFile(configPath);
@@ -34,7 +44,7 @@ public class ConfigReader {
             try (InputStream input = Files.newInputStream(configPath)) {
                 properties.load(input);
             }
-
+            // Get data from config
             for (String key : properties.stringPropertyNames()) {
                 config.put(key, properties.getProperty(key));
             }

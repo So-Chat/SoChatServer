@@ -13,10 +13,17 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class FriendshipService {
 
+    // Friendships uses FriendshipStatus types
+    // Types like PENDING, BLOCKED and ACCEPTED
+
     private final FriendshipRepository friendshipRepository;
     private final UserRepository userRepository;
     private final TrustKeysRepository trustKeysRepository;
 
+    // Send friend request from user to user
+    // Firstly it checks if user exists
+    // Then it's creating Friendship with status and sets user fingerprint(to check if users valid)
+    // and finally saves to repository
     public Friendship sendRequest(Long fromUserId, Long toUserId, String fingerprint) {
         try {
             User from = userRepository.findById(fromUserId).orElseThrow(() -> new RuntimeException("User not found"));
@@ -38,8 +45,13 @@ public class FriendshipService {
         }
     }
 
+    //
+    //
+    // Four next methods will check for Friendship existing
+    //
+    //
 
-
+    // Decline friendship, it just deletes Friendship and users Trust Keys from Database
     public boolean declineRequest(Long requestId) {
         try {
             Optional<Friendship> opt = friendshipRepository.findById(requestId);
@@ -56,11 +68,12 @@ public class FriendshipService {
         }
     }
 
+    // Removes friendship, it removes existing frindship nor previous
     public boolean removeFriendship(Long requestId) {
         try {
             Optional<Friendship> opt = friendshipRepository.findById(requestId);
             if (opt.isEmpty()) {
-                throw new RuntimeException("Friendship request not found: " + requestId);
+                throw new RuntimeException("Friendship not found: " + requestId);
             }
             Friendship f = opt.get();
 
@@ -73,12 +86,13 @@ public class FriendshipService {
         }
     }
 
+    // Accepts friendship
     public Friendship acceptRequest(Long requestId, String fingerprint){
         try{
             Optional<Friendship> opt = friendshipRepository.findById(requestId);
 
             if (opt.isEmpty()) {
-                throw new RuntimeException("Friendship request not found: " + requestId);
+                throw new RuntimeException("Friendship not found: " + requestId);
             }
 
             Friendship f = opt.get();
@@ -92,6 +106,7 @@ public class FriendshipService {
         }
     }
 
+    // Blocks user, sets blocked state to Friendship
     public Friendship block(long userId, long blockedId){
         try{
             User from = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("user not found"));
@@ -111,34 +126,12 @@ public class FriendshipService {
         }
     }
 
+
+    // Getting all friendships that user have
     public List<Friendship> listByUser(Long userId) {
         User u = userRepository.findById(userId).orElseThrow();
         return friendshipRepository.findByUserOrFriend(u, u);
     }
 
-    private String extractSqlState(Throwable e) {
-
-        while (e != null) {
-
-            if (e instanceof PSQLException psql)
-                return psql.getSQLState();
-
-            e = e.getCause();
-        }
-
-        return null;
-    }
-
-    private FriendshipException mapDbError(Throwable e){
-        String state = extractSqlState(e);
-
-        if (state == null)
-            return new FriendshipException(FriendshipErrorCode.DB_ERROR);
-
-        return switch (state){
-            case "23505" -> new FriendshipException(FriendshipErrorCode.ALREADY_FRIENDS);
-            default -> new FriendshipException(FriendshipErrorCode.DB_ERROR);
-        };
-    }
 
 }

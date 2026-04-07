@@ -9,9 +9,7 @@ import java.util.List;
 
 @RequiredArgsConstructor
 public class UserService {
-    private final FriendshipRepository friendshipRepository;
     private final UserRepository userRepository;
-    private final TrustKeysRepository trustKeysRepository;
 
     public User getUser(String username) {
         try{

@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import java.io.IOException;
 import java.security.PublicKey;
 
+// Another simple class for easier serializing PublicKeys when sending to User
 public class PublicKeySerializer extends JsonSerializer<PublicKey> {
 
     @Override

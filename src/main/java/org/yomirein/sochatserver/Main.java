@@ -18,6 +18,7 @@ public class Main {
         // TODO: Check compliance with the tables
         //
 
+        // This method does everything
         databaseCheck();
 
         try {
@@ -29,7 +30,9 @@ public class Main {
 
     }
 
+    // Checking for existing 'sochat' database
     private static void databaseCheck() {
+        // Firstly getting config to get all data
         Map<String, String> propertiesMap = ConfigReader.getConfig();
         Properties properties = new Properties();
         URI uri = null;
@@ -40,13 +43,19 @@ public class Main {
         }
         String absolutePath = new File(uri).getParent();
 
+        // If config has url trying to connect to server
+        // TODO: Make connection tries
         if (propertiesMap.containsKey("db.url")) {
             System.out.println("Config already contains Database info, skipping setup...");
             return;
         }
 
+        // If there's no url in config continue
+
+        // Getting postgres connection credentials
         DbInput input = readDbInput();
 
+        // Creating database and save it in config
         try (HikariDataSource ds = dataSourceFactory(input.ipPort, "", input.user, input.password);) {
 
             String dbName = resolveDatabase(ds, input, properties);
@@ -77,6 +86,7 @@ public class Main {
         String password;
     }
 
+    // Getting postgres authorization, like ip, username and password
     private static DbInput readDbInput() {
         BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
 
@@ -94,6 +104,7 @@ public class Main {
         return input;
     }
 
+    // Creating database or just write existing 'sochat' database without creating new
     private static String resolveDatabase(
             HikariDataSource ds,
             DbInput input,
@@ -102,6 +113,7 @@ public class Main {
 
         try (Connection con = ds.getConnection()) {
 
+            // Check for 'sochat' db exists
             PreparedStatement ps =
                     con.prepareStatement("SELECT 1 FROM pg_database WHERE datname = ?");
             ps.setString(1, "sochat");
@@ -113,6 +125,7 @@ public class Main {
                 return "sochat";
             }
 
+            // Create db in not
             System.out.println("Database not found.");
 
             BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
@@ -132,6 +145,7 @@ public class Main {
         }
     }
 
+    // Creates database itself, duh
     private static void createDatabase(String name, HikariDataSource ds, Properties properties) {
         try (Connection con = ds.getConnection()) {
             Statement st = con.createStatement();
@@ -144,6 +158,12 @@ public class Main {
             e.printStackTrace();
         }
     }
+
+    // Creates types
+    //
+    // chat_role for roles in chats, groups and maybe channels in Future
+    // chat_type says everything for itself
+    //
     public static void initTypes(HikariDataSource ds) {
         try (Connection con = ds.getConnection()) {
             Statement st = con.createStatement();
@@ -160,6 +180,10 @@ public class Main {
     }
 
 
+    // Init every column in database
+    // Database docs will be made in future
+    // Or else you can read it like that, i don't think it that hard
+    // TODO: Make database docs
     public static void initColumns(HikariDataSource ds) {
         try (Connection con = ds.getConnection()) {
             Statement st = con.createStatement();
@@ -255,6 +279,7 @@ public class Main {
         }
     }
 
+    // Factory for HikariDataSource so i don't have to make it every second
     private static HikariDataSource dataSourceFactory(String ipPort, String dbName, String psqlName, String psqlPassword){
         HikariConfig cfg = new HikariConfig();
         cfg.setJdbcUrl("jdbc:postgresql://" + ipPort + "/" + dbName);
@@ -271,7 +296,9 @@ public class Main {
         return new HikariDataSource(cfg);
     }
 
-
+    // BufferedReader readLine for easier use
+    // (I won't use Scanner because I think BufferedReader more compatible for just typing a few words in console(
+    // (and maybe commands in future))
     private static String readLine(BufferedReader in, String prompt) {
         try {
             String input = in.readLine();

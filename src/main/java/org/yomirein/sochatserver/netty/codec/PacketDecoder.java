@@ -15,19 +15,28 @@ import org.yomirein.sochatserver.utils.JsonConfig;
 
 import java.util.List;
 
+import static org.yomirein.sochatserver.utils.JsonConfig.MAPPER;
+
+// Simple packet decoder that decodes all incoming data
 public class PacketDecoder extends MessageToMessageDecoder<Object> {
 
-    ObjectMapper objectMapper = JsonConfig.MAPPER;
+    // It uses abstract MessageToMessageDecoder with decode() in it
 
     @Override
     protected void decode(ChannelHandlerContext channelHandlerContext, Object msg, List<Object> out) throws Exception {
+        // It's more complex actually
+        // For Pings we just retain it
+        //
+        // But for TextWebSocketFrame we're generating JsonNode from incoming text
+        // and then making Type and Payload for MessagePacket, that will be used in WsPacketHandler.java!
+
         if (msg instanceof WebSocketFrame frame) {
             if (frame instanceof PingWebSocketFrame || frame instanceof PongWebSocketFrame) {
                 System.out.println("PONG");
                 out.add(frame.retain());
             } else if (frame instanceof TextWebSocketFrame textFrame) {
                 String text = textFrame.text();
-                JsonNode root = objectMapper.readTree(text);
+                JsonNode root = MAPPER.readTree(text);
                 String type = root.get("type").asText();
                 ObjectNode payload = (ObjectNode) root.get("payload");
                 out.add(new MessagePacket(type, payload));

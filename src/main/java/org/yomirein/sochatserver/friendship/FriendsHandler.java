@@ -16,13 +16,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import static org.yomirein.sochatserver.utils.MessageSender.notifyUser;
-import static org.yomirein.sochatserver.utils.MessageSender.sendError;
+import static org.yomirein.sochatserver.utils.MessageSender.*;
 
 @RequiredArgsConstructor
 public class FriendsHandler {
 
-    private final SessionManager sessionManager;//test
+    private final SessionManager sessionManager;
+
     private final UserRepository userRepository;
     private final FriendshipRepository friendshipRepository;
 
@@ -49,11 +49,7 @@ public class FriendsHandler {
 
             Friendship result = friendshipService.sendRequest(userId, toUser.getId(), fingerprint);
 
-            MessagePacket answerPacket = new MessagePacket.Builder()
-                    .type(messagePacket.getType())
-                    .put("success", true)
-                    .put("requestId", messagePacket.getPayload().get("requestId").asText())
-                    .put("server_message", "Send friend request successfully")
+            MessagePacket answerPacket = buildBaseResponse(messagePacket, "Send friend request successfully")
                     .put("friendship", JsonConfig.MAPPER.writeValueAsString(result))
                     .build();
 
@@ -67,9 +63,7 @@ public class FriendsHandler {
             channelHandlerContext.channel().writeAndFlush(answerPacket);
 
         } catch (Exception e) {
-            System.out.println(e);
             sendError(channelHandlerContext, messagePacket, e.getMessage());
-            throw new RuntimeException(e);
         }
     }
 
@@ -87,11 +81,7 @@ public class FriendsHandler {
             Friendship friendship = friendshipCheck.get();
 
             if (friendship.getUser().getId() == user.getId()){
-                MessagePacket answerPacket = new MessagePacket.Builder()
-                        .type(messagePacket.getType())
-                        .put("success", false)
-                        .put("requestId", messagePacket.getPayload().get("requestId").asText())
-                        .put("server_message", "You can't add friend by yourself!")
+                MessagePacket answerPacket = buildBaseResponse(messagePacket,"You can't add friend by yourself!")
                         .build();
                 channelHandlerContext.channel().writeAndFlush(answerPacket);
                 return;
@@ -99,11 +89,7 @@ public class FriendsHandler {
 
             Friendship result = friendshipService.acceptRequest(friendship.getId(), fingerprint);
 
-            MessagePacket answerPacket = new MessagePacket.Builder()
-                    .type(messagePacket.getType())
-                    .put("success", true)
-                    .put("requestId", messagePacket.getPayload().get("requestId").asText())
-                    .put("server_message", "Friend added successfully")
+            MessagePacket answerPacket = buildBaseResponse(messagePacket,"Friend added successfully")
                     .put("friendship", JsonConfig.MAPPER.writeValueAsString(result))
                     .build();
 
@@ -117,9 +103,7 @@ public class FriendsHandler {
             channelHandlerContext.channel().writeAndFlush(answerPacket);
 
         } catch (Exception e) {
-            System.out.println(e);
             sendError(channelHandlerContext, messagePacket, e.getMessage());
-            throw new RuntimeException(e);
         }
     }
 
@@ -137,11 +121,7 @@ public class FriendsHandler {
 
             boolean result = friendshipService.declineRequest(friendship.getId());
 
-            MessagePacket answerPacket = new MessagePacket.Builder()
-                    .type(messagePacket.getType())
-                    .put("success", true)
-                    .put("requestId", messagePacket.getPayload().get("requestId").asText())
-                    .put("server_message", "Friend request declined successfully")
+            MessagePacket answerPacket = buildBaseResponse(messagePacket,"Friend request declined successfully")
                     .put("removed", JsonConfig.MAPPER.writeValueAsString(toUser))
                     .put("user", JsonConfig.MAPPER.writeValueAsString(user))
                     .build();
@@ -157,9 +137,7 @@ public class FriendsHandler {
             channelHandlerContext.channel().writeAndFlush(answerPacket);
 
         } catch (Exception e) {
-            System.out.println(e);
             sendError(channelHandlerContext, messagePacket, e.getMessage());
-            throw new RuntimeException(e);
         }
     }
 
@@ -176,11 +154,7 @@ public class FriendsHandler {
 
             boolean result = friendshipService.removeFriendship(friendship.getId());
 
-            MessagePacket answerPacket = new MessagePacket.Builder()
-                    .type(messagePacket.getType())
-                    .put("success", true)
-                    .put("requestId", messagePacket.getPayload().get("requestId").asText())
-                    .put("server_message", "Friendship deleted successfully")
+            MessagePacket answerPacket = buildBaseResponse(messagePacket,"Friendship deleted successfully")
                     .put("removed", JsonConfig.MAPPER.writeValueAsString(user))
                     .put("user", JsonConfig.MAPPER.writeValueAsString(toUser))
                     .build();
@@ -196,9 +170,7 @@ public class FriendsHandler {
             channelHandlerContext.channel().writeAndFlush(answerPacket);
 
         } catch (Exception e) {
-            System.out.println(e);
             sendError(channelHandlerContext, messagePacket, e.getMessage());
-            throw new RuntimeException(e);
         }
     }
 
@@ -210,11 +182,7 @@ public class FriendsHandler {
 
             Friendship result = friendshipService.block(userId, blocked.getId());
 
-            MessagePacket answerPacket = new MessagePacket.Builder()
-                    .type(messagePacket.getType())
-                    .put("success", true)
-                    .put("requestId", messagePacket.getPayload().get("requestId").asText())
-                    .put("server_message", "Blocked successfully")
+            MessagePacket answerPacket = buildBaseResponse(messagePacket,"Blocked successfully")
                     .put("friendship", JsonConfig.MAPPER.writeValueAsString(result))
                     .build();
 
@@ -228,28 +196,20 @@ public class FriendsHandler {
             notifyUser(blocked, requestInformation, sessionManager);
             channelHandlerContext.channel().writeAndFlush(answerPacket);
         } catch (Exception e) {
-            System.out.println(e);
             sendError(channelHandlerContext, messagePacket, e.getMessage());
-            throw new RuntimeException(e);
         }
     }
 
     public void getRelatives(ChannelHandlerContext channelHandlerContext, MessagePacket messagePacket, Long userId){
         try {
             List<Friendship> friendships = friendshipService.listByUser(userId);
-            MessagePacket friendshipList = new MessagePacket.Builder()
-                    .type(messagePacket.getType())
-                    .put("success", true)
-                    .put("requestId", messagePacket.getPayload().get("requestId").asText())
-                    .put("server_message", "Got friendships list")
+            MessagePacket friendshipList = buildBaseResponse(messagePacket,"Got friendships list")
                     .put("friendship_list", JsonConfig.MAPPER.writeValueAsString(friendships))
                     .build();
             channelHandlerContext.channel().writeAndFlush(friendshipList);
 
         } catch (JsonProcessingException e) {
-            System.out.println(e);
             sendError(channelHandlerContext, messagePacket, e.getMessage());
-            throw new RuntimeException(e);
         }
     }
 

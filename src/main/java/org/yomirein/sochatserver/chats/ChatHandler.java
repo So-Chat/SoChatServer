@@ -14,8 +14,7 @@ import org.yomirein.sochatserver.utils.MessageSender;
 
 import java.util.*;
 
-import static org.yomirein.sochatserver.utils.MessageSender.notifyUser;
-import static org.yomirein.sochatserver.utils.MessageSender.sendError;
+import static org.yomirein.sochatserver.utils.MessageSender.*;
 
 @RequiredArgsConstructor
 public class ChatHandler {
@@ -46,20 +45,14 @@ public class ChatHandler {
             chat.setParticipants(chatService.getParticipantList(chat.getId()));
             chat.setSenderKeys(chatService.getUserSenderKeysByChat(chat.getId(), fromUser.getId()));
             mapPrivateChat(chat, fromUser.getId(), chatService.getParticipantList(chat.getId()));
-            MessagePacket answerPacket = new MessagePacket.Builder()
-                    .type(messagePacket.getType())
-                    .put("success", true)
-                    .put("requestId", messagePacket.getPayload().get("requestId").asText())
-                    .put("server_message", "Chat got successfully")
+            MessagePacket answerPacket = buildBaseResponse(messagePacket, "Chat got successfully")
                     .put("chat", JsonConfig.MAPPER.writeValueAsString(chat))
                     .build();
 
             channelHandlerContext.channel().writeAndFlush(answerPacket);
 
         } catch (Exception e) {
-            System.out.println(e);
             sendError(channelHandlerContext, messagePacket, e.getMessage());
-            throw new RuntimeException(e);
         }
     }
 
@@ -81,19 +74,13 @@ public class ChatHandler {
             });
 
 
-            MessagePacket answerPacket = new MessagePacket.Builder()
-                    .type(messagePacket.getType())
-                    .put("success", true)
-                    .put("requestId", messagePacket.getPayload().get("requestId").asText())
-                    .put("server_message", "Got chats lists")
+            MessagePacket answerPacket = buildBaseResponse(messagePacket, "Got chats lists")
                     .put("chats", JsonConfig.MAPPER.writeValueAsString(chats))
                     .build();
 
             channelHandlerContext.channel().writeAndFlush(answerPacket);
         } catch (Exception e) {
-            System.out.println(e);
             sendError(channelHandlerContext, messagePacket, e.getMessage());
-            throw new RuntimeException(e);
         }
     }
 
@@ -123,11 +110,7 @@ public class ChatHandler {
             chat.setSenderKeys(null);
 
             mapPrivateChat(chat, fromUser.getId(), participants);
-            MessagePacket answerPacket = new MessagePacket.Builder()
-                    .type(messagePacket.getType())
-                    .put("success", true)
-                    .put("requestId", messagePacket.getPayload().get("requestId").asText())
-                    .put("server_message", "Chat created successfully")
+            MessagePacket answerPacket = buildBaseResponse(messagePacket, "Chat created successfully")
                     .put("chat", JsonConfig.MAPPER.writeValueAsString(chat))
                     .build();
 
@@ -143,9 +126,7 @@ public class ChatHandler {
             notifyUser(fromUser, answerPacket, sessionManager);
 
         } catch (Exception e) {
-            System.out.println(e);
             sendError(channelHandlerContext, messagePacket, e.getMessage());
-            throw new RuntimeException(e);
         }
     }
 
@@ -197,11 +178,7 @@ public class ChatHandler {
 
             mapPrivateChat(chat, fromUser.getId(), participants);
             chat.setSenderKeys(chatService.getUserSenderKeysByChat(chat.getId(), fromUser.getId()));
-            MessagePacket answerPacket = new MessagePacket.Builder()
-                    .type(messagePacket.getType())
-                    .put("success", true)
-                    .put("requestId", messagePacket.getPayload().get("requestId").asText())
-                    .put("server_message", "User added to chat successfully")
+            MessagePacket answerPacket = buildBaseResponse(messagePacket, "User added to chat successfully")
                     .put("chat", JsonConfig.MAPPER.writeValueAsString(chat))
                     .build();
             notifyUser(fromUser, answerPacket, sessionManager);
@@ -220,9 +197,7 @@ public class ChatHandler {
 
 
         } catch (Exception e) {
-            System.out.println(e);
             sendError(channelHandlerContext, messagePacket, e.getMessage());
-            throw new RuntimeException(e);
         }
     }
 
@@ -245,11 +220,7 @@ public class ChatHandler {
             boolean result = chatService.deleteChat(chat);
 
             chat = mapPrivateChat(chat, fromUser.getId(), participants);
-            MessagePacket answerPacket = new MessagePacket.Builder()
-                    .type(messagePacket.getType())
-                    .put("success", true)
-                    .put("requestId", messagePacket.getPayload().get("requestId").asText())
-                    .put("server_message", "Chat deleted successfully")
+            MessagePacket answerPacket = buildBaseResponse(messagePacket, "Chat deleted successfully")
                     .put("chat", JsonConfig.MAPPER.writeValueAsString(chat))
                     .build();
 
@@ -268,9 +239,7 @@ public class ChatHandler {
             }
 
         } catch (Exception e) {
-            System.out.println(e);
             sendError(channelHandlerContext, messagePacket, e.getMessage());
-            throw new RuntimeException(e);
         }
     }
 
@@ -313,11 +282,7 @@ public class ChatHandler {
 
             mapPrivateChat(chat, fromUser.getId(), participants);
             chat.setSenderKeys(chatService.getUserSenderKeysByChat(chat.getId(), fromUser.getId()));
-            MessagePacket answerPacket = new MessagePacket.Builder()
-                    .type(messagePacket.getType())
-                    .put("success", true)
-                    .put("requestId", messagePacket.getPayload().get("requestId").asText())
-                    .put("server_message", "User removed from chat successfully")
+            MessagePacket answerPacket = buildBaseResponse(messagePacket, "User removed from chat successfully")
                     .put("chat", JsonConfig.MAPPER.writeValueAsString(chat))
                     .build();
             notifyUser(fromUser, answerPacket, sessionManager);
@@ -326,9 +291,7 @@ public class ChatHandler {
             for (User user : chatMembers){
                 mapPrivateChat(chat, user.getId(), participants);
                 chat.setSenderKeys(chatService.getUserSenderKeysByChat(chat.getId(), user.getId()));
-                MessagePacket requestInformation = new MessagePacket.Builder()
-                        .type(messagePacket.getType())
-                        .put("server_message", "User removed from chat")
+                MessagePacket requestInformation = buildBaseResponse(messagePacket, "User removed from chat")
                         .put("chat", JsonConfig.MAPPER.writeValueAsString(chat))
                         .build();
                 notifyUser(user, requestInformation, sessionManager);
@@ -336,9 +299,7 @@ public class ChatHandler {
 
 
         } catch (Exception e) {
-            System.out.println(e);
             sendError(channelHandlerContext, messagePacket, e.getMessage());
-            throw new RuntimeException(e);
         }
     }
 
@@ -348,20 +309,14 @@ public class ChatHandler {
             long id = messagePacket.getPayload().get("chatId").asLong();
             List<User> users = chatService.getChatUsers(id);
 
-            MessagePacket answerPacket = new MessagePacket.Builder()
-                    .type(messagePacket.getType())
-                    .put("success", true)
-                    .put("requestId", messagePacket.getPayload().get("requestId").asText())
-                    .put("server_message", "Got successfully")
+            MessagePacket answerPacket = buildBaseResponse(messagePacket, "Got successfully")
                     .put("users", JsonConfig.MAPPER.writeValueAsString(users))
                     .build();
 
             channelHandlerContext.channel().writeAndFlush(answerPacket);
 
         } catch (Exception e) {
-            System.out.println(e);
             sendError(channelHandlerContext, messagePacket, e.getMessage());
-            throw new RuntimeException(e);
         }
     }
 

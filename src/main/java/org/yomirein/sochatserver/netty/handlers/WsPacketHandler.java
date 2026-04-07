@@ -6,27 +6,17 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import lombok.RequiredArgsConstructor;
 import org.yomirein.sochatserver.auth.AuthHandler;
 import org.yomirein.sochatserver.chats.ChatHandler;
-import org.yomirein.sochatserver.chats.ChatService;
 import org.yomirein.sochatserver.messages.MessageHandler;
-import org.yomirein.sochatserver.messages.MessageRepository;
-import org.yomirein.sochatserver.messages.MessageService;
 import org.yomirein.sochatserver.sessions.SessionManager;
 import org.yomirein.sochatserver.common.models.MessagePacket;
 import org.yomirein.sochatserver.sessions.Session;
-import org.yomirein.sochatserver.common.repos.TrustKeysRepository;
-import org.yomirein.sochatserver.users.User;
 import org.yomirein.sochatserver.friendship.FriendsHandler;
-import org.yomirein.sochatserver.friendship.FriendshipRepository;
-import org.yomirein.sochatserver.users.UserRepository;
-import org.yomirein.sochatserver.friendship.FriendshipService;
-import org.yomirein.sochatserver.users.UserService;
-import org.yomirein.sochatserver.users.UsersHandler;
+import org.yomirein.sochatserver.users.UserHandler;
 import org.yomirein.sochatserver.utils.JwtService;
-
-import java.util.Optional;
 
 import static org.yomirein.sochatserver.utils.MessageSender.sendError;
 
+// WsPacketHandler.java handles everything except authentication xd
 @RequiredArgsConstructor
 public class WsPacketHandler extends SimpleChannelInboundHandler<MessagePacket> {
 
@@ -34,15 +24,19 @@ public class WsPacketHandler extends SimpleChannelInboundHandler<MessagePacket> 
 
     private final AuthHandler authHandler;
     private final FriendsHandler friendsHandler;
-    private final UsersHandler usersHandler;
+    private final UserHandler usersHandler;
     private final ChatHandler chatHandler;
     private final MessageHandler messageHandler;
 
+
+    // Handling every packet, they separated by their appointment
     @Override
     protected void channelRead0(ChannelHandlerContext channelHandlerContext, MessagePacket messagePacket) throws Exception {
         switch (messagePacket.getType()) {
+            // ping-pong and authentication without withAuth
             // PING PONG
             case "ping": ping(channelHandlerContext.channel()); break;
+            // Authentication
             case "authenticate": authHandler.authorize(channelHandlerContext, messagePacket); break;
 
             // FRIENDSHIP SERVICE
@@ -83,6 +77,7 @@ public class WsPacketHandler extends SimpleChannelInboundHandler<MessagePacket> 
         }
     }
 
+    // Ping Pong answer to user
     public void ping(Channel channel) {
         MessagePacket packetMessage = new MessagePacket("pong");
         packetMessage.payload.put("success", true);
@@ -90,6 +85,7 @@ public class WsPacketHandler extends SimpleChannelInboundHandler<MessagePacket> 
         channel.writeAndFlush(packetMessage);
     }
 
+    // Check authentication within handling almost every packet
     private void withAuth(ChannelHandlerContext ctx, MessagePacket messagePacket, AuthenticatedHandler handler) throws Exception {
         Long userId = null;
 
@@ -107,12 +103,13 @@ public class WsPacketHandler extends SimpleChannelInboundHandler<MessagePacket> 
     }
 
 
-
+    // Interface to easier handling every incoming packet
     @FunctionalInterface
     private interface AuthenticatedHandler {
         void handle(ChannelHandlerContext ctx, MessagePacket messagePacket, Long userId) throws Exception;
     }
 
+    // Exceptions
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         cause.printStackTrace();

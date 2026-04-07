@@ -16,6 +16,7 @@ public class Participant {
 
     private long lastMessageId = 0;
 
+    // Constructor without lastMessageId because it can be without it
     public Participant(Long chatId, long userId, ChatRole chatRole) {
         this.chatId = chatId;
         this.userId = userId;

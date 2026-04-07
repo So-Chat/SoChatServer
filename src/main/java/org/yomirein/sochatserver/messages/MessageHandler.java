@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.RequiredArgsConstructor;
 import org.yomirein.sochatserver.chats.Chat;
+import org.yomirein.sochatserver.chats.ChatRole;
 import org.yomirein.sochatserver.chats.ChatService;
 import org.yomirein.sochatserver.chats.Participant;
 import org.yomirein.sochatserver.common.models.MessagePacket;
@@ -15,143 +16,154 @@ import org.yomirein.sochatserver.utils.JsonConfig;
 
 import java.util.List;
 
-import static org.yomirein.sochatserver.utils.MessageSender.notifyUser;
-import static org.yomirein.sochatserver.utils.MessageSender.sendError;
+import static org.yomirein.sochatserver.utils.JsonConfig.*;
+import static org.yomirein.sochatserver.utils.MessageSender.*;
+import static org.yomirein.sochatserver.utils.MessageSender.buildBaseResponse;
 
+// MessageHandler.java handles messages, getting them setting or deleting
 @RequiredArgsConstructor
 public class MessageHandler {
 
+    // MessageService for easier contact with MessageRepository
+    // ChatService for getting message chats
+    // UserService for getting message senders
+    // SessionManager to get all active sessions to send changes
     private final MessageService messageService;
     private final ChatService chatService;
     private final UserService userService;
 
-    private final MessageRepository messageRepository;
-
     private final SessionManager sessionManager;
 
 
+    // Send message
     public void sendMessage(ChannelHandlerContext channelHandlerContext, MessagePacket messagePacket, Long userId) {
         try {
-            String content = messagePacket.getPayload().get("content").asText();
-            long chatId = messagePacket.getPayload().get("chatId").asLong();
-            JsonNode replyNode = messagePacket.getPayload().get("replyMessageId");
+            // Get payload because I will use it multiple times
+            JsonNode payload = messagePacket.getPayload();
 
-            Long replyMessageId = null;
+            // Getting message content, chatId and reply message if it has it
+            String content = getTextOrNull(payload, "content");
+            Long chatId = getLongOrNull(payload, "chatId");
+            Long replyMessageId = getLongOrNull(payload, "replyMessageId");
 
-            if (replyNode != null && !replyNode.isNull()) {
-                replyMessageId = replyNode.asLong();
+            // If there's no content or chatId send error because it mandatory data
+            if (content == null || chatId == null) {
+                sendError(channelHandlerContext, messagePacket, "Not enough data");
+                return;
             }
 
+            // Get chat and its participants list
             Chat chat = chatService.getChat(chatId);
             chat.setParticipants(chatService.getParticipantList(chatId));
 
-
+            // Remove sender from members list so we can send them other messages
             List<User> chatMembers = chat.getParticipants().stream()
                     .map(p -> userService.getUser(p.getUserId()))
-                    .filter(user -> user.getId() != userId)
+                    .filter(messageSender -> messageSender.getId() != userId)
                     .toList();
 
-
+            // Actually adding message to list
             Message message = messageService.addMessage(userId, chatId, content, replyMessageId, chatService.getCurrentKeyVersion(chatId));
 
-            MessagePacket answerPacket = new MessagePacket.Builder()
-                    .type(messagePacket.getType())
-                    .put("success", true)
-                    .put("requestId", messagePacket.getPayload().get("requestId").asText())
-                    .put("server_message", "Message sent successfully")
+            // Generating answer
+            MessagePacket answerPacket = buildBaseResponse(messagePacket, "Message sent successfully")
                     .put("message", JsonConfig.MAPPER.writeValueAsString(message))
                     .build();
-
             MessagePacket requestInformation = new MessagePacket.Builder()
                     .type(messagePacket.getType())
                     .put("server_message", "You got message")
                     .put("message", JsonConfig.MAPPER.writeValueAsString(message))
                     .build();
 
-            channelHandlerContext.channel().writeAndFlush(answerPacket);
+            // Sending data to users
+            notifyUser(userService.getUser(userId), answerPacket, sessionManager);
             for (User member : chatMembers) {
                 notifyUser(member, requestInformation, sessionManager);
             }
         } catch (Exception e) {
-            System.out.println(e);
-            sendError(channelHandlerContext, messagePacket, e.getMessage());
-            throw new RuntimeException(e);
+            handleError(channelHandlerContext, messagePacket, e);
         }
     }
 
     public void getMessage(ChannelHandlerContext channelHandlerContext, MessagePacket messagePacket, Long userId) {
         try {
-            long messageId = messagePacket.getPayload().get("messageId").asLong();
-            Message message = messageService.getMessage(messageId);
+            // Get messageId and if it's null send error and return
+            Long messageId = getLongOrNull(messagePacket.getPayload(), "messageId");
+            if (messageId == null) {
+                sendError(channelHandlerContext, messagePacket, "Not enough data");
+                return;
+            }
 
-            MessagePacket answerPacket = new MessagePacket.Builder()
-                    .type(messagePacket.getType())
-                    .put("success", true)
-                    .put("requestId", messagePacket.getPayload().get("requestId").asText())
-                    .put("server_message", "Got messages successfully")
+            // Get message and send it
+            Message message = messageService.getMessage(messageId);
+            MessagePacket answerPacket = buildBaseResponse(messagePacket, "Got message successfully")
                     .put("message", JsonConfig.MAPPER.writeValueAsString(message))
                     .build();
 
+            // Sending data
             channelHandlerContext.writeAndFlush(answerPacket);
-
         } catch (Exception e) {
-            System.out.println(e);
-            sendError(channelHandlerContext, messagePacket, e.getMessage());
-            throw new RuntimeException(e);
+            handleError(channelHandlerContext, messagePacket, e);
         }
     }
 
     public void getRecentMessages(ChannelHandlerContext channelHandlerContext, MessagePacket messagePacket, Long userId){
         try {
-            System.out.println(messagePacket.getPayload());
-            int offset = messagePacket.getPayload().get("offset").asInt();
-            long chatId = messagePacket.getPayload().get("chatId").asLong();
-
+            // Get offset and chatId and if they are null send error
+            JsonNode payload = messagePacket.getPayload();
+            Integer offset = getIntOrNull(payload, "offset");
+            Long chatId = getLongOrNull(payload, "chatId");
+            if (offset == null || chatId == null) {
+                sendError(channelHandlerContext, messagePacket, "Not enough data");
+                return;
+            }
+            // Get recent messages
             List<Message> messages = messageService.getRecentMessages(chatId, offset);
 
-            MessagePacket answerPacket = new MessagePacket.Builder()
-                    .type(messagePacket.getType())
-                    .put("success", true)
-                    .put("requestId", messagePacket.getPayload().get("requestId").asText())
-                    .put("server_message", "Got messages successfully")
+            // Generate answer with messages
+            MessagePacket answerPacket = buildBaseResponse(messagePacket, "Got messages successfully")
                     .put("messages", JsonConfig.MAPPER.writeValueAsString(messages))
                     .build();
 
-
+            // Sending data
             channelHandlerContext.channel().writeAndFlush(answerPacket);
         } catch (Exception e) {
-            System.out.println(e);
-            sendError(channelHandlerContext, messagePacket, e.getMessage());
-            throw new RuntimeException(e);
+            handleError(channelHandlerContext, messagePacket, e);
         }
     }
 
     public void setLastReadMessage(ChannelHandlerContext channelHandlerContext, MessagePacket messagePacket, Long userId) {
         try {
-            long messageId = messagePacket.getPayload().get("id").asLong();
+            // Get last read message id and if null send error
+            Long messageId = getLongOrNull(messagePacket.getPayload(), "id");
+            if (messageId == null) {
+                sendError(channelHandlerContext, messagePacket, "Not enough data");
+                return;
+            }
+
+            // Get message
             Message message = messageService.getMessage(messageId);
 
             Chat chat = chatService.getChat(message.getChatId());
             chat.setParticipants(chatService.getParticipantList(message.getChatId()));
 
+            // Get chat members without reader to send different packets
             List<User> chatMembers = chat.getParticipants().stream()
                     .map(p -> userService.getUser(p.getUserId()))
                     .filter(user -> user.getId() != userId)
                     .toList();
 
+            // Check if message reader in chat
             Participant participant = chat.getParticipants().stream().filter(u -> u.getUserId() == userId).findFirst().orElse(null);
             if (participant == null) {
                 sendError(channelHandlerContext, messagePacket, "User does not contains in chat");
                 return;
             }
+            // Setting data
             participant.setLastMessageId(messageId);
             Participant result = messageService.setLastReadMessage(participant);
 
-            MessagePacket answerPacket = new MessagePacket.Builder()
-                    .type(messagePacket.getType())
-                    .put("success", true)
-                    .put("requestId", messagePacket.getPayload().get("requestId").asText())
-                    .put("server_message", "You read message successfully")
+            MessagePacket answerPacket = buildBaseResponse(messagePacket, "You read message successfully")
                     .put("participant", JsonConfig.MAPPER.writeValueAsString(result))
                     .build();
 
@@ -161,42 +173,56 @@ public class MessageHandler {
                     .put("participant", JsonConfig.MAPPER.writeValueAsString(result))
                     .build();
 
+            // Sending data to users
             notifyUser(userService.getUser(userId), answerPacket, sessionManager);
             for (User member : chatMembers) {
                 notifyUser(member, requestInformation, sessionManager);
             }
         } catch (Exception e) {
-            System.out.println(e);
-            sendError(channelHandlerContext, messagePacket, e.getMessage());
-            throw new RuntimeException(e);
+            handleError(channelHandlerContext, messagePacket, e);
         }
     }
 
 
     public void editMessage(ChannelHandlerContext channelHandlerContext, MessagePacket messagePacket, Long userId){
         try {
-            String content = messagePacket.getPayload().get("content").asText();
-            long messageId = messagePacket.getPayload().get("id").asLong();
+            // Get payload because we will use it multiple times
+            JsonNode payload = messagePacket.getPayload();
 
+            // Getting new content and messageId
+            String content = getTextOrNull(payload, "content");
+            Long messageId = getLongOrNull(payload, "id");
 
+            // If content or messageId is null send error because it mandatory data
+            if (content == null || messageId == null) {
+                sendError(channelHandlerContext, messagePacket, "Not enough data");
+                return;
+            }
 
+            // Get old message
             Message oldMessage = messageService.getMessage(messageId);
 
+            // Get chat and its participants list
             Chat chat = chatService.getChat(oldMessage.getChatId());
             chat.setParticipants(chatService.getParticipantList(oldMessage.getChatId()));
 
+            // Check if user is message sender
+            if (oldMessage.getSenderId() != userId){
+                sendError(channelHandlerContext, messagePacket, "You can't edit others user message!");
+                return;
+            }
+
+            // Get chat members without editor to send them update
             List<User> chatMembers = chat.getParticipants().stream()
                     .map(p -> userService.getUser(p.getUserId()))
                     .filter(user -> user.getId() != userId)
                     .toList();
 
+            // Actually editing message
             Message message = messageService.editMessage(messageId, content);
 
-            MessagePacket answerPacket = new MessagePacket.Builder()
-                    .type(messagePacket.getType())
-                    .put("success", true)
-                    .put("requestId", messagePacket.getPayload().get("requestId").asText())
-                    .put("server_message", "Message edited successfully")
+            // Generating answer
+            MessagePacket answerPacket = buildBaseResponse(messagePacket, "Message edited successfully")
                     .put("message", JsonConfig.MAPPER.writeValueAsString(message))
                     .build();
 
@@ -206,38 +232,51 @@ public class MessageHandler {
                     .put("message", JsonConfig.MAPPER.writeValueAsString(message))
                     .build();
 
-            channelHandlerContext.writeAndFlush(answerPacket);
+            // Sending data to users
+            notifyUser(userService.getUser(userId), answerPacket, sessionManager);
             for (User member : chatMembers) {
                 notifyUser(member, requestInformation, sessionManager);
             }
         } catch (Exception e) {
-            System.out.println(e);
-            sendError(channelHandlerContext, messagePacket, e.getMessage());
-            throw new RuntimeException(e);
+            handleError(channelHandlerContext, messagePacket, e);
         }
     }
 
     public void deleteMessage(ChannelHandlerContext channelHandlerContext, MessagePacket messagePacket, Long userId){
         try {
-            long messageId = messagePacket.getPayload().get("id").asLong();
+            // Get messageId and if it's null send error
+            Long messageId = getLongOrNull(messagePacket.getPayload(), "id");
+            if (messageId == null) {
+                sendError(channelHandlerContext, messagePacket, "Not enough data");
+                return;
+            }
+
+            // Get message
             Message message = messageService.getMessage(messageId);
 
+            // Get chat and its participants list
             Chat chat = chatService.getChat(message.getChatId());
             chat.setParticipants(chatService.getParticipantList(message.getChatId()));
 
+            // Check if user can delete message
+            // Only message sender itself or user with privilegesаут in chat can do this
+            if (message.getSenderId() != userId ||
+                    chat.getParticipants().stream().anyMatch(p -> p.getUserId() == userId && !(p.getChatRole() == ChatRole.ADMIN || p.getChatRole() == ChatRole.OWNER))) {
+                sendError(channelHandlerContext, messagePacket, "You can't delete others user message!");
+                return;
+            }
+
+            // Get chat members without deleter to send them update
             List<User> chatMembers = chat.getParticipants().stream()
                     .map(p -> userService.getUser(p.getUserId()))
                     .filter(user -> user.getId() != userId)
                     .toList();
 
-
+            // Actually deleting message
             boolean result = messageService.deleteMessage(messageId);
 
-            MessagePacket answerPacket = new MessagePacket.Builder()
-                    .type(messagePacket.getType())
-                    .put("success", true)
-                    .put("requestId", messagePacket.getPayload().get("requestId").asText())
-                    .put("server_message", "Message deleted successfully")
+            // Generating answer
+            MessagePacket answerPacket = buildBaseResponse(messagePacket, "Message deleted successfully")
                     .put("message", JsonConfig.MAPPER.writeValueAsString(message))
                     .build();
 
@@ -247,14 +286,13 @@ public class MessageHandler {
                     .put("message", JsonConfig.MAPPER.writeValueAsString(message))
                     .build();
 
-            channelHandlerContext.writeAndFlush(answerPacket);
+            // Sending data to users
+            notifyUser(userService.getUser(userId), answerPacket, sessionManager);
             for (User member : chatMembers) {
                 notifyUser(member, requestInformation, sessionManager);
             }
         } catch (Exception e) {
-            System.out.println(e);
-            sendError(channelHandlerContext, messagePacket, e.getMessage());
-            throw new RuntimeException(e);
+            handleError(channelHandlerContext, messagePacket, e);
         }
     }
 

@@ -7,6 +7,7 @@ import org.yomirein.sochatserver.sessions.Session;
 import org.yomirein.sochatserver.sessions.SessionManager;
 import org.yomirein.sochatserver.users.User;
 import org.yomirein.sochatserver.users.UserRepository;
+import org.yomirein.sochatserver.utils.JsonConfig;
 import org.yomirein.sochatserver.utils.JwtService;
 
 import java.util.Optional;
@@ -45,6 +46,7 @@ public class AuthHandler {
             MessagePacket messagePacket1 = new MessagePacket.Builder()
                     .type(messagePacket.getType())
                     .put("success", true)
+                    .put("user", JsonConfig.MAPPER.writeValueAsString(user))
                     .put("requestId", messagePacket.getPayload().get("requestId").asText())
                     .build();
 

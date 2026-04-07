@@ -13,32 +13,26 @@ import io.netty.handler.codec.http.cors.CorsHandler;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import io.netty.handler.stream.ChunkedWriteHandler;
+import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yomirein.sochatserver.auth.AuthHandler;
 import org.yomirein.sochatserver.chats.ChatHandler;
-import org.yomirein.sochatserver.chats.ChatService;
 import org.yomirein.sochatserver.friendship.FriendsHandler;
 import org.yomirein.sochatserver.messages.MessageHandler;
-import org.yomirein.sochatserver.messages.MessageRepository;
-import org.yomirein.sochatserver.messages.MessageService;
 import org.yomirein.sochatserver.sessions.SessionManager;
 import org.yomirein.sochatserver.netty.codec.PacketDecoder;
 import org.yomirein.sochatserver.netty.codec.PacketEncoder;
 import org.yomirein.sochatserver.netty.handlers.WsPacketHandler;
-import org.yomirein.sochatserver.common.managers.ChallengeManager;
 import org.yomirein.sochatserver.netty.handlers.HttpPacketHandler;
-import org.yomirein.sochatserver.friendship.FriendshipRepository;
-import org.yomirein.sochatserver.common.repos.TrustKeysRepository;
-import org.yomirein.sochatserver.users.UserRepository;
 import org.yomirein.sochatserver.auth.AuthService;
-import org.yomirein.sochatserver.friendship.FriendshipService;
-import org.yomirein.sochatserver.users.UserService;
-import org.yomirein.sochatserver.users.UsersHandler;
+import org.yomirein.sochatserver.users.UserHandler;
 
-
+@AllArgsConstructor
 public class HttpServer {
 
+    // Imports from SoChat.java
     private final int port;
 
     private final AuthService authService;
@@ -46,32 +40,15 @@ public class HttpServer {
 
     private final AuthHandler authHandler;
     private final FriendsHandler friendsHandler;
-    private final UsersHandler usersHandler;
+    private final UserHandler usersHandler;
     private final ChatHandler chatHandler;
     private final MessageHandler messageHandler;
 
+    // Adding logger
     private final Logger logger = LoggerFactory.getLogger(HttpServer.class);
 
-
-    public HttpServer(AuthService authService, SessionManager sessionManager,
-                      AuthHandler authHandler, FriendsHandler friendsHandler,
-                      UsersHandler usersHandler, ChatHandler chatHandler,
-                      MessageHandler messageHandler, int port) {
-        this.authService = authService;
-        this.sessionManager = sessionManager;
-
-        this.authHandler = authHandler;
-        this.friendsHandler = friendsHandler;
-        this.usersHandler = usersHandler;
-        this.chatHandler = chatHandler;
-        this.messageHandler = messageHandler;
-
-        this.port = port;
-    }
-
-
     public void run() throws Exception {
-        logger.info("Starting Http Server");
+        logger.info("Starting Http and WebSocket Server");
 
         // EventLoopGroups
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);
@@ -80,7 +57,7 @@ public class HttpServer {
         CorsConfig corsConfig = CorsConfigBuilder.forAnyOrigin() //
                 // Allows all origins
                 .allowedRequestMethods(HttpMethod.GET, HttpMethod.POST, HttpMethod.PUT, HttpMethod.DELETE, HttpMethod.OPTIONS)
-                .allowCredentials() // If you need to support cookies/credentials
+                .allowCredentials() // To support cookies/credentials in the future
                 .allowedRequestHeaders("X-Requested-With", "Content-Type", "Content-Length") // Allowed client headers
                 .exposeHeaders("Content-Disposition") // Headers exposed to the client browser
                 .build();
@@ -95,15 +72,20 @@ public class HttpServer {
                         protected void initChannel(Channel channel) throws Exception {
                             ChannelPipeline p = channel.pipeline();
 
-
+                            // HTTP Server
                             p.addLast(new HttpServerCodec());
                             p.addLast(new HttpObjectAggregator(65536));
 
+                            // WebSocket server protocol init
                             p.addLast(new WebSocketServerProtocolHandler("/ws", null, true));
 
+                            // Cors
                             p.addLast(new CorsHandler(corsConfig));
+                            // HttpPacketHandler init
+                            p.addLast(new ChunkedWriteHandler());
                             p.addLast(new HttpPacketHandler(authService));
 
+                            // WsPacketHandler init, with decoders and encoders
                             p.addLast(new PacketDecoder());
                             p.addLast(new WsPacketHandler(sessionManager, authHandler,
                                     friendsHandler, usersHandler, chatHandler, messageHandler));

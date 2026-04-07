@@ -12,10 +12,14 @@ import java.util.Optional;
 
 import static org.yomirein.sochatserver.utils.JsonConfig.mapUser;
 
+// UserRepository.java, as like other repositories using for talking with database
 public class UserRepository {
 
+    private static final String USER_FIELDS =
+            "id, nickname, username, description, ed25519_public_key, x25519_public_key";
+
     public User saveUser(User user) {
-        String sql = "INSERT INTO users(nickname, username, description, ed25519_public_key, x25519_public_key) VALUES (?, ?, ?, ?) RETURNING id";
+        String sql = "INSERT INTO users(nickname, username, ed25519_public_key, x25519_public_key) VALUES (?, ?, ?, ?) RETURNING id";
         try (Connection dbConnection = Database.getConnection();
              PreparedStatement ps = dbConnection.prepareStatement(sql)) {
 
@@ -37,42 +41,34 @@ public class UserRepository {
         return null;
     }
 
-
     public Optional<User> findByName(String username) {
-        String sql = "SELECT id, nickname, username, description, ed25519_public_key, x25519_public_key FROM users WHERE username = ?";
-        try (Connection dbConnection = Database.getConnection();
-            PreparedStatement ps = dbConnection.prepareStatement(sql)) {
+        String sql = "SELECT " + USER_FIELDS + " FROM users WHERE username = ?";
+        try (Connection conn = Database.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
             ps.setString(1, username);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (!rs.next()) return Optional.empty();
-                return Optional.of(mapUser(rs));
-            }
-        }
-        catch (SQLException ex) {
-            ex.printStackTrace();
-        }
-        return Optional.empty();
-    }
+            return executeUserQuery(ps);
 
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
     public Optional<User> findById(Long id) {
-        String sql = "SELECT id, nickname, username, description, ed25519_public_key, x25519_public_key FROM users WHERE id = ?";
-        try (Connection dbConnection = Database.getConnection();
-             PreparedStatement ps = dbConnection.prepareStatement(sql)) {
+        String sql = "SELECT " + USER_FIELDS + " FROM users WHERE id = ?";
+
+        try (Connection conn = Database.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
             ps.setLong(1, id);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (!rs.next()) return Optional.empty();
+            return executeUserQuery(ps);
 
-                return Optional.of(mapUser(rs));
-            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
-        catch (SQLException ex) {
-
-        }
-        return Optional.empty();
     }
-    
+
     public boolean updateUser(Long id, String username, String nickname, String description) {
-        String sql = "UPDATE users SET username = COALESCE(?, username), nickname = COALESCE(?, nickname), description = ? WHERE id = ?";
+        String sql = "UPDATE users SET username = COALESCE(?, username), nickname = ?, description = ? WHERE id = ?";
         try (Connection c = Database.getConnection();
              PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, username);
@@ -82,6 +78,14 @@ public class UserRepository {
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    // For easier mapping
+    private Optional<User> executeUserQuery(PreparedStatement ps) throws SQLException {
+        try (ResultSet rs = ps.executeQuery()) {
+            if (!rs.next()) return Optional.empty();
+            return Optional.of(mapUser(rs));
         }
     }
 

@@ -14,9 +14,14 @@ import java.util.function.Function;
 
 public class JwtService {
 
+    // Actually really simple JWT Service
+    // It's so simple I just copypasted from previous try then I made sochat in Spring
+
     private static final String SECRET;
     private static final Key SIGNING_KEY;
 
+    // Different security key so every reload every session become invalid
+    // I guess it needed because users don't need to trust server owner
     static {
         byte[] keyBytes = new byte[32];
         new java.security.SecureRandom().nextBytes(keyBytes);
@@ -24,6 +29,7 @@ public class JwtService {
         SIGNING_KEY = Keys.hmacShaKeyFor(Base64.getDecoder().decode(SECRET));
     }
 
+    // Generate JWT Token active for 1 day
     public static String generateToken(String username) {
         Date now = new Date();
         Date exp = new Date(now.getTime() + 1000L * 60 * 60 * 24);
@@ -35,6 +41,7 @@ public class JwtService {
                 .compact();
     }
 
+    // Parse token
     private static Claims parseClaims(String token) throws JwtException {
         return Jwts.parserBuilder()
                 .setSigningKey(SIGNING_KEY)
@@ -43,6 +50,7 @@ public class JwtService {
                 .getBody();
     }
 
+    // Extract user username from token so we can understand who is token owner
     public static String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
@@ -52,6 +60,7 @@ public class JwtService {
         return resolver.apply(claims);
     }
 
+    // Check if token even valid
     public static boolean isTokenValid(String token) {
         try {
             Claims claims = parseClaims(token);

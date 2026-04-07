@@ -10,13 +10,17 @@ import org.yomirein.sochatserver.utils.JsonConfig;
 
 import java.util.List;
 
-public class PacketEncoder extends MessageToMessageEncoder<MessagePacket> {
-    ObjectMapper objectMapper = JsonConfig.MAPPER;
+import static org.yomirein.sochatserver.utils.JsonConfig.MAPPER;
 
+
+// Simple packet encoder that encodes all data
+public class PacketEncoder extends MessageToMessageEncoder<MessagePacket> {
+    // It uses abstract MessageToMessageEncoder with encode() in it
 
     @Override
     protected void encode(ChannelHandlerContext channelHandlerContext, MessagePacket messagePacket, List<Object> list) throws Exception {
-        ObjectNode root = objectMapper.createObjectNode();
+        // We simply just put Type and Payload from MessagePacket in ObjectNode and write it as text
+        ObjectNode root = MAPPER.createObjectNode();
 
         root.put("type", messagePacket.getType());
         root.set("payload", messagePacket.getPayload());

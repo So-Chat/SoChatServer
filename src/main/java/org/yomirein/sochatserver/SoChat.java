@@ -1,11 +1,9 @@
 package org.yomirein.sochatserver;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import org.yomirein.sochatserver.auth.AuthHandler;
 import org.yomirein.sochatserver.chats.ChatHandler;
 import org.yomirein.sochatserver.chats.ChatService;
-import org.yomirein.sochatserver.common.managers.ChallengeManager;
+import org.yomirein.sochatserver.auth.ChallengeManager;
 import org.yomirein.sochatserver.friendship.FriendsHandler;
 import org.yomirein.sochatserver.messages.MessageHandler;
 import org.yomirein.sochatserver.messages.MessageRepository;
@@ -19,45 +17,60 @@ import org.yomirein.sochatserver.users.UserRepository;
 import org.yomirein.sochatserver.auth.AuthService;
 import org.yomirein.sochatserver.friendship.FriendshipService;
 import org.yomirein.sochatserver.users.UserService;
-import org.yomirein.sochatserver.users.UsersHandler;
+import org.yomirein.sochatserver.users.UserHandler;
 
 public class SoChat {
-    public void run() {
+    public void run() throws Exception {
 
-        ObjectMapper objectMapper = new ObjectMapper();
-        ObjectWriter objectWriter = objectMapper.writer().withDefaultPrettyPrinter();
+        // BIG INITIALIZATION
+        //
+        // It has
+        // Authorization (Repository, Service, Handler)
+        // Chats (Repository, Service, Handler)
+        // Sessions (Manager)
+        // Challenges (Manager)
+        // Friendships (Repository, Service, Handler)
+        // Messages (Repository, Service, Handler)
+        // Users (Repository, Service, Handler)
+        //
+        // Server itself
+        //
+        // I separated every type
+        //
+        // And running server, it works on HTTP and WebSocket(Class named HttpServer, because WebSocket works on HTTP anyway)
 
+
+        // Managers
         ChallengeManager challengeManager = new ChallengeManager();
         SessionManager sessionManager = new SessionManager();
 
+        // Repositories initialization
         UserRepository userRepository = new UserRepository();
         TrustKeysRepository trustKeysRepository = new TrustKeysRepository();
         ChatRepository chatRepository = new ChatRepository();
         FriendshipRepository friendshipRepository = new FriendshipRepository();
         MessageRepository messageRepository = new MessageRepository();
 
+        // Services initialization
         AuthService authService = new AuthService(challengeManager, userRepository);
         FriendshipService friendshipService = new FriendshipService(friendshipRepository, userRepository, trustKeysRepository);
-        UserService userService = new UserService(friendshipRepository, userRepository, trustKeysRepository);
+        UserService userService = new UserService(userRepository);
         ChatService chatService = new ChatService(userService, chatRepository);
         MessageService messageService = new MessageService(messageRepository);
 
+        // Handlers initialization
         AuthHandler authHandler = new AuthHandler(userRepository,sessionManager);
         FriendsHandler friendsHandler = new FriendsHandler(sessionManager, userRepository, friendshipRepository, friendshipService, userService);
-        UsersHandler usersHandler = new UsersHandler(sessionManager, userRepository, trustKeysRepository, userService);
+        UserHandler userHandler = new UserHandler(sessionManager, trustKeysRepository, userService);
         ChatHandler chatHandler = new ChatHandler(chatService, userService, messageService, sessionManager);
-        MessageHandler messageHandler = new MessageHandler(messageService, chatService, userService, messageRepository, sessionManager);
+        MessageHandler messageHandler = new MessageHandler(messageService, chatService, userService, sessionManager);
 
-        HttpServer httpServer = new HttpServer(authService, sessionManager, authHandler, friendsHandler,
-                usersHandler, chatHandler, messageHandler, 8081);
+        // Server initialization
+        HttpServer httpServer = new HttpServer(8081, authService, sessionManager, authHandler, friendsHandler,
+                userHandler, chatHandler, messageHandler);
 
-        new Thread(() -> {
-            try {
-                httpServer.run();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }).start();
+        // Run everything
+        httpServer.run();
 
     }
 }
