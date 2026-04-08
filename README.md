@@ -29,3 +29,7 @@ What was done / Что было сделано:
 Eng: I'm currently working on it as a college project, and it will continue if people show interest after first working release.
 
 Rus: Сейчас я это делаю как проект для колледжа, но я продолжу его разрабатывать если люди покажут интерес после первого рабочего релиза
+
+## License - Лицензия
+- **This project is licensed under the [MIT License](https://github.com/yomirein/SoChatServer/blob/master/README.md)** 
+- **Этот проект находится распространяется под [лицензией MIT](https://github.com/yomirein/SoChatServer/blob/master/README.md)**
