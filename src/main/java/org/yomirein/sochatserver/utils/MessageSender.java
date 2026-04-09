@@ -1,6 +1,11 @@
 package org.yomirein.sochatserver.utils;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.*;
+import io.netty.util.CharsetUtil;
 import org.yomirein.sochatserver.common.models.MessagePacket;
 import org.yomirein.sochatserver.sessions.Session;
 import org.yomirein.sochatserver.sessions.SessionManager;
@@ -10,6 +15,38 @@ import java.util.Set;
 
 // A little class for handlers where it generates easy messages to send users
 public class MessageSender {
+
+    // Send json, I also used the same method in https://github.com/yomirein/AuthenticationServer :D
+    public static void sendHttpJson(ChannelHandlerContext ctx, HttpResponseStatus httpResponseStatus, MessagePacket messagePacket) throws JsonProcessingException {
+        String json = JsonConfig.MAPPER.writeValueAsString(messagePacket);
+
+        // Making our response understandable for server
+        ByteBuf content = Unpooled.copiedBuffer(
+                json, CharsetUtil.UTF_8
+        );
+
+        //Then we make a response that we can send, making response status and setting our content for response
+        FullHttpResponse response =
+                new DefaultFullHttpResponse(
+                        HttpVersion.HTTP_1_1,
+                        httpResponseStatus,
+                        content
+                );
+
+
+        // Setting basic headers
+        response.headers().set(
+                HttpHeaderNames.CONTENT_TYPE,
+                "application/json; charset=UTF-8"
+        );
+        response.headers().setInt(
+                HttpHeaderNames.CONTENT_LENGTH,
+                content.readableBytes()
+        );
+
+        // Sending to user!!
+        ctx.writeAndFlush(response);
+    }
 
     // Send error
     public static void sendError(ChannelHandlerContext ctx,

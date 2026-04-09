@@ -274,6 +274,21 @@ public class Main {
                 );
             """);
 
+            st.executeUpdate("""
+               CREATE TABLE media (
+                    media_id TEXT PRIMARY KEY,
+                    message_id TEXT NOT NULL,
+                    mime_type TEXT NOT NULL,
+                    file_name TEXT,
+                    file_size BIGINT NOT NULL,
+                    width INTEGER,
+                    height INTEGER,
+                    length INTEGER,
+                    FOREIGN KEY (message_id) REFERENCES messages(message_id) ON DELETE CASCADE
+               );
+            """
+            );
+
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

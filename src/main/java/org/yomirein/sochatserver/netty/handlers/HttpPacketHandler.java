@@ -30,13 +30,14 @@ import static io.netty.handler.codec.http.HttpResponseStatus.FORBIDDEN;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
+import static org.yomirein.sochatserver.utils.MessageSender.sendHttpJson;
 
 // HttpPacketHandler using for register, validate user and then authenticate user
 @AllArgsConstructor
 public class HttpPacketHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
     private final AuthService authService;
 
-    private final Path root = Paths.get("uploads").toAbsolutePath().normalize();
+
 
     // Read requests
     @Override
@@ -114,102 +115,6 @@ public class HttpPacketHandler extends SimpleChannelInboundHandler<FullHttpReque
         HttpResponseStatus httpResponseStatus = messagePacket.payload.get("success").toString().equals("true")
                 ? OK
                 : BAD_REQUEST;
-        sendJson(ctx, httpResponseStatus, messagePacket);
-    }
-
-    // Send json, I also used the same method in https://github.com/yomirein/AuthenticationServer :D
-    private void sendJson(ChannelHandlerContext ctx, HttpResponseStatus httpResponseStatus, MessagePacket messagePacket) throws JsonProcessingException {
-        String json = JsonConfig.MAPPER.writeValueAsString(messagePacket);
-
-        // Making our response understandable for server
-        ByteBuf content = Unpooled.copiedBuffer(
-                json, CharsetUtil.UTF_8
-        );
-
-        //Then we make a response that we can send, making response status and setting our content for response
-        FullHttpResponse response =
-                new DefaultFullHttpResponse(
-                        HttpVersion.HTTP_1_1,
-                        httpResponseStatus,
-                        content
-                );
-
-
-        // Setting basic headers
-        response.headers().set(
-                HttpHeaderNames.CONTENT_TYPE,
-                "application/json; charset=UTF-8"
-        );
-        response.headers().setInt(
-                HttpHeaderNames.CONTENT_LENGTH,
-                content.readableBytes()
-        );
-
-        // Sending to user!!
-        ctx.writeAndFlush(response);
-    }
-
-    public void getMedia(ChannelHandlerContext ctx, FullHttpRequest fullHttpRequest) throws IOException {
-        if (!fullHttpRequest.decoderResult().isSuccess()) {
-            sendJson(ctx, BAD_REQUEST, new MessagePacket.Builder()
-                    .put("server_message", "Bad request")
-                    .put("success", false)
-                    .build());
-            return;
-        }
-
-        if (fullHttpRequest.method() != HttpMethod.GET) {
-            sendJson(ctx, METHOD_NOT_ALLOWED, new MessagePacket.Builder()
-                    .put("server_message", "Only GET allowed here")
-                    .put("success", false)
-                    .build());
-            return;
-        }
-
-        String uri = fullHttpRequest.uri();
-
-        if (!uri.startsWith("/files/")) {
-            sendJson(ctx, NOT_FOUND, new MessagePacket.Builder()
-                    .put("server_message", "Not found")
-                    .put("success", false)
-                    .build());
-            return;
-        }
-
-        String relative = uri.substring("/files/".length());
-
-        Path requested = root.resolve(relative).normalize();
-
-        if (!requested.startsWith(root)) {
-            sendJson(ctx, FORBIDDEN, new MessagePacket.Builder()
-                    .put("server_message", "Access denied")
-                    .put("success", false)
-                    .build());
-            return;
-        }
-
-        File file = requested.toFile();
-        if (!file.exists() || !file.isFile()) {
-            sendJson(ctx, NOT_FOUND, new MessagePacket.Builder()
-                    .put("server_message", "File not found")
-                    .put("success", false)
-                    .build());
-            return;
-        }
-
-        RandomAccessFile raf = new RandomAccessFile(file, "r");
-
-        HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
-
-        String contentType = URLConnection.guessContentTypeFromName(file.getName());
-        if (contentType == null) {
-            contentType = "application/octet-stream";
-        }
-        response.headers().set(HttpHeaderNames.CONTENT_TYPE, contentType);
-        response.headers().set(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED);
-
-        ctx.write(response);
-        ctx.writeAndFlush(new HttpChunkedInput(new ChunkedFile(raf)))
-                .addListener(ChannelFutureListener.CLOSE);
+        sendHttpJson(ctx, httpResponseStatus, messagePacket);
     }
 }
