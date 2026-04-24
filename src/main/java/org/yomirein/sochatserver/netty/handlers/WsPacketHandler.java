@@ -11,7 +11,7 @@ import org.yomirein.sochatserver.sessions.SessionManager;
 import org.yomirein.sochatserver.common.models.MessagePacket;
 import org.yomirein.sochatserver.sessions.Session;
 import org.yomirein.sochatserver.friendship.FriendsHandler;
-import org.yomirein.sochatserver.users.UserHandler;
+import org.yomirein.sochatserver.users.UsersHandler;
 import org.yomirein.sochatserver.utils.JwtService;
 
 import static org.yomirein.sochatserver.utils.MessageSender.sendError;
@@ -24,7 +24,7 @@ public class WsPacketHandler extends SimpleChannelInboundHandler<MessagePacket> 
 
     private final AuthHandler authHandler;
     private final FriendsHandler friendsHandler;
-    private final UserHandler usersHandler;
+    private final UsersHandler usersHandler;
     private final ChatHandler chatHandler;
     private final MessageHandler messageHandler;
 

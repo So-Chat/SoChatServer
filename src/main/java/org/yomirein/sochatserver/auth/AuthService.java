@@ -1,5 +1,7 @@
 package org.yomirein.sochatserver.auth;
 
+import org.yomirein.sochatserver.common.managers.ChallengeManager;
+import org.yomirein.sochatserver.common.models.Challenge;
 import org.yomirein.sochatserver.utils.JsonConfig;
 import org.yomirein.sochatserver.utils.JwtService;
 import org.yomirein.sochatserver.utils.KeyParser;

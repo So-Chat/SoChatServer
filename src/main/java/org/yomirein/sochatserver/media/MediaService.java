@@ -3,6 +3,7 @@ package org.yomirein.sochatserver.media;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
+import io.netty.handler.codec.http.multipart.*;
 import io.netty.handler.stream.ChunkedFile;
 import org.yomirein.sochatserver.common.models.MessagePacket;
 
@@ -89,11 +90,32 @@ public class MediaService {
                 .addListener(ChannelFutureListener.CLOSE);
     }
 
-    /*
-    public void uploadMedia(ChannelHandlerContext ctx, MessagePacket messagePacket) {
-        try (FileOutputStream stream = new FileOutputStream(root)) {
-            stream.write(bytes);
+
+    // I'm really trying to figure out how it works...
+    public void uploadMedia(ChannelHandlerContext ctx, FullHttpRequest fullHttpRequest) {
+        //String token = fullHttpRequest.headers().get(HttpHeaderNames.AUTHORIZATION).substring(7);
+        String contentType = fullHttpRequest.headers().get(HttpHeaderNames.CONTENT_TYPE);
+        DefaultHttpDataFactory factory = new DefaultHttpDataFactory(true);
+        HttpPostRequestDecoder decoder = new HttpPostRequestDecoder(factory, fullHttpRequest);
+
+        try {
+            while (decoder.hasNext()) {
+                InterfaceHttpData data = decoder.next();
+
+                if (data.getHttpDataType() == InterfaceHttpData.HttpDataType.Attribute) {
+                    Attribute attribute = (Attribute) data;
+                    System.out.println("Поле: " + attribute.getName() + " = " + attribute.getValue());
+
+                } else if (data.getHttpDataType() == InterfaceHttpData.HttpDataType.FileUpload) {
+                    FileUpload fileUpload = (FileUpload) data;
+                    System.out.println("Файл: " + fileUpload.getFilename());
+                }
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } finally {
+            decoder.destroy();
         }
-    }*/
+    }
 
 }

@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import org.yomirein.sochatserver.auth.AuthHandler;
 import org.yomirein.sochatserver.chats.ChatHandler;
 import org.yomirein.sochatserver.friendship.FriendsHandler;
+import org.yomirein.sochatserver.media.MediaService;
 import org.yomirein.sochatserver.messages.MessageHandler;
 import org.yomirein.sochatserver.sessions.SessionManager;
 import org.yomirein.sochatserver.netty.codec.PacketDecoder;
@@ -27,7 +28,7 @@ import org.yomirein.sochatserver.netty.codec.PacketEncoder;
 import org.yomirein.sochatserver.netty.handlers.WsPacketHandler;
 import org.yomirein.sochatserver.netty.handlers.HttpPacketHandler;
 import org.yomirein.sochatserver.auth.AuthService;
-import org.yomirein.sochatserver.users.UserHandler;
+import org.yomirein.sochatserver.users.UsersHandler;
 
 @AllArgsConstructor
 public class HttpServer {
@@ -36,11 +37,13 @@ public class HttpServer {
     private final int port;
 
     private final AuthService authService;
+    private final MediaService mediaService;
+
     private final SessionManager sessionManager;
 
     private final AuthHandler authHandler;
     private final FriendsHandler friendsHandler;
-    private final UserHandler usersHandler;
+    private final UsersHandler usersHandler;
     private final ChatHandler chatHandler;
     private final MessageHandler messageHandler;
 
@@ -74,7 +77,7 @@ public class HttpServer {
 
                             // HTTP Server
                             p.addLast(new HttpServerCodec());
-                            p.addLast(new HttpObjectAggregator(65536));
+                            p.addLast(new HttpObjectAggregator(655369999));
 
                             // WebSocket server protocol init
                             p.addLast(new WebSocketServerProtocolHandler("/ws", null, true));
@@ -83,7 +86,7 @@ public class HttpServer {
                             p.addLast(new CorsHandler(corsConfig));
                             // HttpPacketHandler init
                             p.addLast(new ChunkedWriteHandler());
-                            p.addLast(new HttpPacketHandler(authService));
+                            p.addLast(new HttpPacketHandler(authService, mediaService));
 
                             // WsPacketHandler init, with decoders and encoders
                             p.addLast(new PacketDecoder());

@@ -12,6 +12,7 @@ import io.netty.util.CharsetUtil;
 import lombok.AllArgsConstructor;
 import org.yomirein.sochatserver.common.models.MessagePacket;
 import org.yomirein.sochatserver.auth.AuthService;
+import org.yomirein.sochatserver.media.MediaService;
 import org.yomirein.sochatserver.utils.JsonConfig;
 import org.yomirein.sochatserver.utils.MessageSender;
 
@@ -36,7 +37,7 @@ import static org.yomirein.sochatserver.utils.MessageSender.sendHttpJson;
 @AllArgsConstructor
 public class HttpPacketHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
     private final AuthService authService;
-
+    private final MediaService mediaService;
 
 
     // Read requests
@@ -44,7 +45,7 @@ public class HttpPacketHandler extends SimpleChannelInboundHandler<FullHttpReque
     protected void channelRead0(ChannelHandlerContext channelHandlerContext, FullHttpRequest fullHttpRequest) throws Exception {
 
         String uri = fullHttpRequest.uri();
-
+        System.out.println(uri);
         // Basic answer if someone got into ./
         if ("/".equals(fullHttpRequest.uri())) {
             FullHttpResponse response = new DefaultFullHttpResponse(
@@ -80,28 +81,33 @@ public class HttpPacketHandler extends SimpleChannelInboundHandler<FullHttpReque
                     .toString(CharsetUtil.UTF_8);
 
             // Getting json from request
-            Map<String, Object> map = JsonConfig.MAPPER.readValue(body, Map.class);
-            Map<String, Object> payload = (Map<String, Object>) map.get("payload");
+            if (uri.startsWith("/auth/")) {
+                Map<String, Object> map = JsonConfig.MAPPER.readValue(body, Map.class);
+                Map<String, Object> payload = (Map<String, Object>) map.get("payload");
+                switch (uri) {
+                    // AuthService works like handler and service because of its easy work
 
-            switch (uri){
-                // AuthService works like handler and service because of its easy work
+                    // If it's registration we register user with AuthService.register()
+                    case ("/auth/register"):
+                        MessagePacket registerResponse = authService.register(String.valueOf(payload.get("username")),
+                                String.valueOf(payload.get("ed25519PublicKey")), String.valueOf(payload.get("x25519PublicKey")));
+                        // Send answer
+                        configureResponseAndSend(channelHandlerContext, registerResponse);
+                        break;
 
-                // If it's registration we register user with AuthService.register()
-                case ("/auth/register"):
-                    MessagePacket registerResponse  = authService.register(String.valueOf(payload.get("username")),
-                            String.valueOf(payload.get("ed25519PublicKey")), String.valueOf(payload.get("x25519PublicKey")));
-                    // Send answer
-                    configureResponseAndSend(channelHandlerContext, registerResponse);
-                    break;
+                    // And verifying user with checking for challenge competion
+                    case ("/auth/verify"):
+                        MessagePacket verifyResponse = authService.login(String.valueOf(payload.get("username")),
+                                String.valueOf(payload.get("signature")),
+                                String.valueOf(payload.get("challenge")));
+                        // Send answer
+                        configureResponseAndSend(channelHandlerContext, verifyResponse);
+                        break;
+                }
+            }
 
-                // And verifying user with checking for challenge competion
-                case ("/auth/verify"):
-                    MessagePacket verifyResponse = authService.login(String.valueOf(payload.get("username")),
-                            String.valueOf(payload.get("signature")),
-                            String.valueOf(payload.get("challenge")));
-                    // Send answer
-                    configureResponseAndSend(channelHandlerContext, verifyResponse);
-                    break;
+            if (uri.startsWith("/media")) {
+                mediaService.uploadMedia(channelHandlerContext, fullHttpRequest);
             }
 
 
