@@ -60,19 +60,23 @@ public class HttpPacketHandler extends SimpleChannelInboundHandler<FullHttpReque
 
         // GET Requests
         if (fullHttpRequest.method().equals(HttpMethod.GET)) {
-            // Sends challenge to complete in 5 minutes after sending from server
-            if (!uri.contains("/auth/login?username=")){
-                return;
+
+            if (uri.contains("/auth/login?username=")){
+                // Get user data
+                // Sends challenge to complete in 5 minutes after sending from server
+                QueryStringDecoder queryStringDecoder = new QueryStringDecoder(uri);
+                Map<String, List<String>> params = queryStringDecoder.parameters();
+
+                // AuthService creates challenge
+                MessagePacket challengeResponse = authService.createChallenge(String.valueOf(params.get("username").getFirst()));
+
+                // Send answer
+                configureResponseAndSend(channelHandlerContext, challengeResponse);
             }
-            // Get user data
-            QueryStringDecoder queryStringDecoder = new QueryStringDecoder(uri);
-            Map<String, List<String>> params = queryStringDecoder.parameters();
+            else if (uri.contains("/media")){
+                mediaService.getMedia(channelHandlerContext, fullHttpRequest);
+            }
 
-            // AuthService creates challenge
-            MessagePacket challengeResponse = authService.createChallenge(String.valueOf(params.get("username").getFirst()));
-
-            // Send answer
-            configureResponseAndSend(channelHandlerContext, challengeResponse);
         }
 
         // POST Requests
@@ -106,7 +110,7 @@ public class HttpPacketHandler extends SimpleChannelInboundHandler<FullHttpReque
                 }
             }
 
-            if (uri.startsWith("/media")) {
+            else if (uri.startsWith("/media")) {
                 mediaService.uploadMedia(channelHandlerContext, fullHttpRequest);
             }
 

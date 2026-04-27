@@ -45,7 +45,7 @@ public class MediaService {
 
         String uri = fullHttpRequest.uri();
 
-        if (!uri.startsWith("/files/")) {
+        if (!uri.startsWith("/media/")) {
             sendHttpJson(ctx, NOT_FOUND, new MessagePacket.Builder()
                     .put("server_message", "Not found")
                     .put("success", false)
@@ -53,7 +53,7 @@ public class MediaService {
             return;
         }
 
-        String relative = uri.substring("/files/".length());
+        String relative = uri.substring("/media/".length());
 
         Path requested = root.resolve(relative).normalize();
 
@@ -109,6 +109,7 @@ public class MediaService {
                 } else if (data.getHttpDataType() == InterfaceHttpData.HttpDataType.FileUpload) {
                     FileUpload fileUpload = (FileUpload) data;
                     System.out.println("Файл: " + fileUpload.getFilename());
+                    fileUpload.renameTo(new File(root.resolve(fileUpload.getFilename()).toAbsolutePath().toString()));
                 }
             }
         } catch (IOException e) {
