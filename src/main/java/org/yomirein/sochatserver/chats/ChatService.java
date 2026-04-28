@@ -189,4 +189,9 @@ public class ChatService {
             throw new RuntimeException(e);
         }
     }
+
+    public boolean isUserInChat(long chatId, User user){
+        List<Chat> chats = getUserChats(user.getId());
+        return chats.stream().anyMatch(chat -> { return chat.getId() == chatId; } );
+    }
 }

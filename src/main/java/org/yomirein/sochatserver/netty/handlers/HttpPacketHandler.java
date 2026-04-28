@@ -1,43 +1,28 @@
 package org.yomirein.sochatserver.netty.handlers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.*;
-import io.netty.handler.stream.ChunkedFile;
 import io.netty.util.CharsetUtil;
 import lombok.AllArgsConstructor;
 import org.yomirein.sochatserver.common.models.MessagePacket;
 import org.yomirein.sochatserver.auth.AuthService;
-import org.yomirein.sochatserver.media.MediaService;
+import org.yomirein.sochatserver.media.MediaHandler;
 import org.yomirein.sochatserver.utils.JsonConfig;
-import org.yomirein.sochatserver.utils.MessageSender;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.net.URLConnection;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.*;
-import static io.netty.handler.codec.http.HttpResponseStatus.FORBIDDEN;
-import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
-import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
-import static org.yomirein.sochatserver.utils.MessageSender.sendHttpJson;
+import static org.yomirein.sochatserver.utils.MessageSender.sendHttp;
 
 // HttpPacketHandler using for register, validate user and then authenticate user
 @AllArgsConstructor
 public class HttpPacketHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
     private final AuthService authService;
-    private final MediaService mediaService;
+    private final MediaHandler mediaHandler;
 
 
     // Read requests
@@ -74,7 +59,7 @@ public class HttpPacketHandler extends SimpleChannelInboundHandler<FullHttpReque
                 configureResponseAndSend(channelHandlerContext, challengeResponse);
             }
             else if (uri.contains("/media")){
-                mediaService.getMedia(channelHandlerContext, fullHttpRequest);
+                mediaHandler.getMedia(channelHandlerContext, fullHttpRequest);
             }
 
         }
@@ -111,7 +96,7 @@ public class HttpPacketHandler extends SimpleChannelInboundHandler<FullHttpReque
             }
 
             else if (uri.startsWith("/media")) {
-                mediaService.uploadMedia(channelHandlerContext, fullHttpRequest);
+                mediaHandler.uploadMedia(channelHandlerContext, fullHttpRequest);
             }
 
 
@@ -125,6 +110,6 @@ public class HttpPacketHandler extends SimpleChannelInboundHandler<FullHttpReque
         HttpResponseStatus httpResponseStatus = messagePacket.payload.get("success").toString().equals("true")
                 ? OK
                 : BAD_REQUEST;
-        sendHttpJson(ctx, httpResponseStatus, messagePacket);
+        sendHttp(ctx, httpResponseStatus, messagePacket);
     }
 }

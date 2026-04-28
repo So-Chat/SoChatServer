@@ -4,6 +4,7 @@ package org.yomirein.sochatserver.users;
 import lombok.RequiredArgsConstructor;
 import org.yomirein.sochatserver.friendship.FriendshipRepository;
 import org.yomirein.sochatserver.common.repos.TrustKeysRepository;
+import org.yomirein.sochatserver.utils.JwtService;
 
 import java.util.List;
 
@@ -25,6 +26,11 @@ public class UserService {
         }catch (RuntimeException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public User getUserByToken(String token) {
+        String username = JwtService.extractUsername(token);
+        return getUser(username);
     }
 
     public boolean changeProfile(Long userId, String username, String nickname, String description) {

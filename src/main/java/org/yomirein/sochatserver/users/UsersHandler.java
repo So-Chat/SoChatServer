@@ -11,6 +11,9 @@ import org.yomirein.sochatserver.utils.JsonConfig;
 import java.util.Optional;
 import java.util.Set;
 
+import static org.yomirein.sochatserver.utils.MessageSender.notifyUser;
+import static org.yomirein.sochatserver.utils.MessageSender.sendError;
+
 @RequiredArgsConstructor
 public class UsersHandler {
 
@@ -87,7 +90,7 @@ public class UsersHandler {
                     .put("description", user.getDescription())
                     .build();
 
-            notifyUser(user, answerPacket);
+            notifyUser(user, answerPacket, sessionManager);
             
 
         } catch (Exception e) {
@@ -95,28 +98,5 @@ public class UsersHandler {
             sendError(channelHandlerContext, messagePacket, e.getMessage());
             throw new RuntimeException(e);
         }
-    }
-
-
-    private void sendError(ChannelHandlerContext ctx,
-                           MessagePacket request,
-                           String errorMessage) {
-        System.out.println("айй бляяя");
-        MessagePacket packet = new MessagePacket.Builder()
-                .type(request.getType())
-                .put("success", false)
-                .put("requestId", request.getPayload().get("requestId").asText())
-                .put("server_message", errorMessage)
-                .build();
-
-        ctx.channel().writeAndFlush(packet);
-    }
-
-    private void notifyUser(User user, MessagePacket packet) {
-
-        Set<Session> sessions = sessionManager.getUserSessions(user);
-
-        for (Session session : sessions)
-            session.getChannel().writeAndFlush(packet);
     }
 }

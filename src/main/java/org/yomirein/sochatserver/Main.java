@@ -277,14 +277,15 @@ public class Main {
             st.executeUpdate("""
                CREATE TABLE media (
                     media_id TEXT PRIMARY KEY,
-                    message_id TEXT NOT NULL,
+                    message_id BIGINT,
+                    sender_id BIGINT NOT NULL,
                     mime_type TEXT NOT NULL,
-                    file_name TEXT,
+                    file_name TEXT NOT NULL,
                     file_size BIGINT NOT NULL,
                     width INTEGER,
                     height INTEGER,
                     length INTEGER,
-                    FOREIGN KEY (message_id) REFERENCES messages(message_id) ON DELETE CASCADE
+                    FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE
                );
             """
             );

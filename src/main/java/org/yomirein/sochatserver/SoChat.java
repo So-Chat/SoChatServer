@@ -5,6 +5,8 @@ import org.yomirein.sochatserver.chats.ChatHandler;
 import org.yomirein.sochatserver.chats.ChatService;
 import org.yomirein.sochatserver.common.managers.ChallengeManager;
 import org.yomirein.sochatserver.friendship.FriendsHandler;
+import org.yomirein.sochatserver.media.MediaHandler;
+import org.yomirein.sochatserver.media.MediaRepository;
 import org.yomirein.sochatserver.media.MediaService;
 import org.yomirein.sochatserver.messages.MessageHandler;
 import org.yomirein.sochatserver.messages.MessageRepository;
@@ -51,6 +53,7 @@ public class SoChat {
         ChatRepository chatRepository = new ChatRepository();
         FriendshipRepository friendshipRepository = new FriendshipRepository();
         MessageRepository messageRepository = new MessageRepository();
+        MediaRepository mediaRepository = new MediaRepository();
 
         // Services initialization
         AuthService authService = new AuthService(challengeManager, userRepository);
@@ -58,7 +61,7 @@ public class SoChat {
         UserService userService = new UserService(userRepository);
         ChatService chatService = new ChatService(userService, chatRepository);
         MessageService messageService = new MessageService(messageRepository);
-        MediaService mediaService = new MediaService();
+        MediaService mediaService = new MediaService(mediaRepository, chatService, userService);
 
         // Handlers initialization
         AuthHandler authHandler = new AuthHandler(userRepository,sessionManager);
@@ -66,9 +69,10 @@ public class SoChat {
         UsersHandler userHandler = new UsersHandler(sessionManager, userRepository, trustKeysRepository, userService);
         ChatHandler chatHandler = new ChatHandler(chatService, userService, messageService, sessionManager);
         MessageHandler messageHandler = new MessageHandler(messageService, chatService, userService, sessionManager);
+        MediaHandler mediaHandler = new MediaHandler(mediaService);
 
         // Server initialization
-        HttpServer httpServer = new HttpServer(8081, authService, mediaService, sessionManager, authHandler, friendsHandler,
+        HttpServer httpServer = new HttpServer(8081, authService, mediaHandler, sessionManager, authHandler, friendsHandler,
                 userHandler, chatHandler, messageHandler);
 
         // Run everything

@@ -2,6 +2,8 @@
 
 ``` Make your own messanger! ```
 
+Made on Java
+
 Eng: __SoChat enables users to create and manage their own messaging server for private text and voice communication, giving them full control over customization and security!__
 
 Rus: __SoChat позволяет пользователям создавать и управлять собственным сервером для обмена текстовыми и голосовыми сообщениями, предоставляя им полный контроль над настройкой и безопасностью!__

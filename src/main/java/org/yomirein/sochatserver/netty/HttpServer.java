@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import org.yomirein.sochatserver.auth.AuthHandler;
 import org.yomirein.sochatserver.chats.ChatHandler;
 import org.yomirein.sochatserver.friendship.FriendsHandler;
+import org.yomirein.sochatserver.media.MediaHandler;
 import org.yomirein.sochatserver.media.MediaService;
 import org.yomirein.sochatserver.messages.MessageHandler;
 import org.yomirein.sochatserver.sessions.SessionManager;
@@ -37,7 +38,7 @@ public class HttpServer {
     private final int port;
 
     private final AuthService authService;
-    private final MediaService mediaService;
+    private final MediaHandler mediaHandler;
 
     private final SessionManager sessionManager;
 
@@ -86,7 +87,7 @@ public class HttpServer {
                             p.addLast(new CorsHandler(corsConfig));
                             // HttpPacketHandler init
                             p.addLast(new ChunkedWriteHandler());
-                            p.addLast(new HttpPacketHandler(authService, mediaService));
+                            p.addLast(new HttpPacketHandler(authService, mediaHandler));
 
                             // WsPacketHandler init, with decoders and encoders
                             p.addLast(new PacketDecoder());

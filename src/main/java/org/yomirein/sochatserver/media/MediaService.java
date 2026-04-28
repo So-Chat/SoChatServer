@@ -1,122 +1,98 @@
 package org.yomirein.sochatserver.media;
 
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.multipart.*;
-import io.netty.handler.stream.ChunkedFile;
-import org.yomirein.sochatserver.common.models.MessagePacket;
+import lombok.AllArgsConstructor;
+import org.apache.commons.io.FilenameUtils;
+import org.yomirein.sochatserver.chats.Chat;
+import org.yomirein.sochatserver.chats.ChatService;
+import org.yomirein.sochatserver.users.User;
+import org.yomirein.sochatserver.users.UserService;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.net.URLConnection;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.List;
+import java.util.UUID;
 
-import static io.netty.handler.codec.http.HttpResponseStatus.*;
-import static io.netty.handler.codec.http.HttpResponseStatus.FORBIDDEN;
-import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
-import static io.netty.handler.codec.http.HttpResponseStatus.OK;
-import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
-import static org.yomirein.sochatserver.utils.MessageSender.sendHttpJson;
+import static org.yomirein.sochatserver.utils.MessageSender.sendHttp;
 
+@AllArgsConstructor
 public class MediaService {
 
     private final Path root = Paths.get("uploads").toAbsolutePath().normalize();
+    private final MediaRepository mediaRepository;
 
-    public void getMedia(ChannelHandlerContext ctx, FullHttpRequest fullHttpRequest) throws IOException {
-        if (!fullHttpRequest.decoderResult().isSuccess()) {
-            sendHttpJson(ctx, BAD_REQUEST, new MessagePacket.Builder()
-                    .put("server_message", "Bad request")
-                    .put("success", false)
-                    .build());
-            return;
-        }
+    private final ChatService chatService;
+    private final UserService userService;
 
-        if (fullHttpRequest.method() != HttpMethod.GET) {
-            sendHttpJson(ctx, METHOD_NOT_ALLOWED, new MessagePacket.Builder()
-                    .put("server_message", "Only GET allowed here")
-                    .put("success", false)
-                    .build());
-            return;
-        }
-
-        String uri = fullHttpRequest.uri();
-
+    public File getMediaFile(String uri) throws MediaException {
         if (!uri.startsWith("/media/")) {
-            sendHttpJson(ctx, NOT_FOUND, new MessagePacket.Builder()
-                    .put("server_message", "Not found")
-                    .put("success", false)
-                    .build());
-            return;
+            throw new MediaException(HttpResponseStatus.NOT_FOUND, "Not found");
         }
 
-        String relative = uri.substring("/media/".length());
+        String mediaId = Paths.get(uri).getFileName().toString();
+        System.out.println(mediaId);
+        Media media = mediaRepository.findById(mediaId).orElseThrow(() -> new MediaException(HttpResponseStatus.NOT_FOUND, "Not found"));
 
-        Path requested = root.resolve(relative).normalize();
+        String dir1 = media.getMediaId().substring(0, 2);
+        String dir2 = media.getMediaId().substring(2, 4);
 
-        if (!requested.startsWith(root)) {
-            sendHttpJson(ctx, FORBIDDEN, new MessagePacket.Builder()
-                    .put("server_message", "Access denied")
-                    .put("success", false)
-                    .build());
-            return;
+        String extension = "";
+        int dotIndex = media.getFileName().lastIndexOf('.');
+        if (dotIndex >= 0) {
+            extension = media.getFileName().substring(dotIndex);
         }
+
+        Path requested = root.resolve(dir1, dir2, media.getMediaId() + extension).normalize();
 
         File file = requested.toFile();
         if (!file.exists() || !file.isFile()) {
-            sendHttpJson(ctx, NOT_FOUND, new MessagePacket.Builder()
-                    .put("server_message", "File not found")
-                    .put("success", false)
-                    .build());
-            return;
+            throw new MediaException(HttpResponseStatus.NOT_FOUND, "File not found");
         }
-
-        RandomAccessFile raf = new RandomAccessFile(file, "r");
-
-        HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
-
-        String contentType = URLConnection.guessContentTypeFromName(file.getName());
-        if (contentType == null) {
-            contentType = "application/octet-stream";
-        }
-        response.headers().set(HttpHeaderNames.CONTENT_TYPE, contentType);
-        response.headers().set(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED);
-
-        ctx.write(response);
-        ctx.writeAndFlush(new HttpChunkedInput(new ChunkedFile(raf)))
-                .addListener(ChannelFutureListener.CLOSE);
+        return new File(file.getParent(), media.getFileName());
     }
 
 
     // I'm really trying to figure out how it works...
-    public void uploadMedia(ChannelHandlerContext ctx, FullHttpRequest fullHttpRequest) {
-        //String token = fullHttpRequest.headers().get(HttpHeaderNames.AUTHORIZATION).substring(7);
-        String contentType = fullHttpRequest.headers().get(HttpHeaderNames.CONTENT_TYPE);
-        DefaultHttpDataFactory factory = new DefaultHttpDataFactory(true);
-        HttpPostRequestDecoder decoder = new HttpPostRequestDecoder(factory, fullHttpRequest);
+    public String saveUploadedFile(String token, FileUpload fileUpload) throws MediaException, IOException {
+        User user = userService.getUserByToken(token);
+        String fileId = UUID.randomUUID().toString();
 
-        try {
-            while (decoder.hasNext()) {
-                InterfaceHttpData data = decoder.next();
+        String originalName = fileUpload.getFilename();
+        String extension = FilenameUtils.getExtension(originalName);
 
-                if (data.getHttpDataType() == InterfaceHttpData.HttpDataType.Attribute) {
-                    Attribute attribute = (Attribute) data;
-                    System.out.println("Поле: " + attribute.getName() + " = " + attribute.getValue());
+        String newFileName = fileId + "." + extension;
 
-                } else if (data.getHttpDataType() == InterfaceHttpData.HttpDataType.FileUpload) {
-                    FileUpload fileUpload = (FileUpload) data;
-                    System.out.println("Файл: " + fileUpload.getFilename());
-                    fileUpload.renameTo(new File(root.resolve(fileUpload.getFilename()).toAbsolutePath().toString()));
-                }
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } finally {
-            decoder.destroy();
+        Media media = mediaRepository.save(
+                fileId,
+                user.getId(),
+                fileUpload.getContentType(),
+                originalName,
+                fileUpload.length()
+        );
+
+        String dir1 = fileId.substring(0, 2);
+        String dir2 = fileId.substring(2, 4);
+
+        // media/7a/3b/7a3b...
+        Path folder = root.resolve(dir1, dir2);
+
+        if (!Files.exists(folder)) {
+            Files.createDirectories(folder);
         }
+
+        File dest = folder.resolve(newFileName).toFile();
+
+        if (!fileUpload.renameTo(dest)) {
+            Files.copy(fileUpload.getFile().toPath(), dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        }
+
+        return media.getMediaId();
     }
 
 }

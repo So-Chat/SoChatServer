@@ -17,12 +17,19 @@ import java.util.Set;
 public class MessageSender {
 
     // Send json, I also used the same method in https://github.com/yomirein/AuthenticationServer :D
-    public static void sendHttpJson(ChannelHandlerContext ctx, HttpResponseStatus httpResponseStatus, MessagePacket messagePacket) throws JsonProcessingException {
+    public static void sendHttp(ChannelHandlerContext ctx, HttpResponseStatus httpResponseStatus, MessagePacket messagePacket) throws JsonProcessingException {
         String json = JsonConfig.MAPPER.writeValueAsString(messagePacket);
+        sendHttpJson(ctx, httpResponseStatus, json);
+    }
+    // A little bit modified sendHttpJson cuz i don't want use Jackson too much
+    public static void sendHttp(ChannelHandlerContext ctx, HttpResponseStatus httpResponseStatus, String message) {
+        sendHttpJson(ctx, httpResponseStatus, message);
+    }
 
-        // Making our response understandable for server
+
+    public static void sendHttpJson(ChannelHandlerContext ctx, HttpResponseStatus httpResponseStatus, String message) {
         ByteBuf content = Unpooled.copiedBuffer(
-                json, CharsetUtil.UTF_8
+                message, CharsetUtil.UTF_8
         );
 
         //Then we make a response that we can send, making response status and setting our content for response
