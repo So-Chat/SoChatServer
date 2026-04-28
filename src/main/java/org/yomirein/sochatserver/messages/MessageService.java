@@ -2,9 +2,8 @@ package org.yomirein.sochatserver.messages;
 
 
 import lombok.RequiredArgsConstructor;
-import org.yomirein.sochatserver.chats.Chat;
-import org.yomirein.sochatserver.chats.ChatRepository;
 import org.yomirein.sochatserver.chats.Participant;
+import org.yomirein.sochatserver.media.MediaService;
 
 import java.util.List;
 import java.util.Optional;
@@ -14,8 +13,10 @@ public class MessageService {
 
     private final MessageRepository messageRepository;
 
+    private final MediaService mediaService;
+
     // Adding message to Database with arguments
-    public Message addMessage(long senderId, long chatId, String content, Long replyMessageId, int keyVersion){
+    public Message addMessage(long senderId, long chatId, String content, Long replyMessageId, int keyVersion, List<String> mediaIds){
         try {
             Message message = new Message();
 
@@ -27,7 +28,13 @@ public class MessageService {
 
             message.setKeyVersion(keyVersion);
 
-            return messageRepository.save(message);
+            Message newMessage = messageRepository.save(message);
+
+            for (String mediaId : mediaIds){
+                mediaService.attachMessage(mediaId, newMessage.getId());
+            }
+
+            return newMessage;
 
         }catch (RuntimeException e) {
             throw new RuntimeException(e);

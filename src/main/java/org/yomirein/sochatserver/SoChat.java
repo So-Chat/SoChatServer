@@ -60,15 +60,15 @@ public class SoChat {
         FriendshipService friendshipService = new FriendshipService(friendshipRepository, userRepository, trustKeysRepository);
         UserService userService = new UserService(userRepository);
         ChatService chatService = new ChatService(userService, chatRepository);
-        MessageService messageService = new MessageService(messageRepository);
         MediaService mediaService = new MediaService(mediaRepository, chatService, userService);
+        MessageService messageService = new MessageService(messageRepository, mediaService);
 
         // Handlers initialization
         AuthHandler authHandler = new AuthHandler(userRepository,sessionManager);
         FriendsHandler friendsHandler = new FriendsHandler(sessionManager, userRepository, friendshipRepository, friendshipService, userService);
         UsersHandler userHandler = new UsersHandler(sessionManager, userRepository, trustKeysRepository, userService);
         ChatHandler chatHandler = new ChatHandler(chatService, userService, messageService, sessionManager);
-        MessageHandler messageHandler = new MessageHandler(messageService, chatService, userService, sessionManager);
+        MessageHandler messageHandler = new MessageHandler(messageService, chatService, userService, mediaService, sessionManager);
         MediaHandler mediaHandler = new MediaHandler(mediaService);
 
         // Server initialization

@@ -4,8 +4,10 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.yomirein.sochatserver.media.Media;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -20,6 +22,8 @@ public class Message {
     private Long replyMessageId;
 
     private int keyVersion;
+
+    private List<Media> mediaFiles;
 
     private String content;
     private LocalDateTime timestamp;

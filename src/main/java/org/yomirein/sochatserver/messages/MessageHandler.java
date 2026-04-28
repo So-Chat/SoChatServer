@@ -1,6 +1,7 @@
 package org.yomirein.sochatserver.messages;
 
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +10,7 @@ import org.yomirein.sochatserver.chats.ChatRole;
 import org.yomirein.sochatserver.chats.ChatService;
 import org.yomirein.sochatserver.chats.Participant;
 import org.yomirein.sochatserver.common.models.MessagePacket;
+import org.yomirein.sochatserver.media.MediaService;
 import org.yomirein.sochatserver.sessions.SessionManager;
 import org.yomirein.sochatserver.users.User;
 import org.yomirein.sochatserver.users.UserService;
@@ -31,6 +33,7 @@ public class MessageHandler {
     private final MessageService messageService;
     private final ChatService chatService;
     private final UserService userService;
+    private final MediaService mediaService;
 
     private final SessionManager sessionManager;
 
@@ -45,6 +48,10 @@ public class MessageHandler {
             String content = getTextOrNull(payload, "content");
             Long chatId = getLongOrNull(payload, "chatId");
             Long replyMessageId = getLongOrNull(payload, "replyMessageId");
+            List<String> mediaIds = MAPPER.readValue(
+                    payload.get("media_files").asText(),
+                    new TypeReference<List<String>>() {}
+            );
 
             // If there's no content or chatId send error because it mandatory data
             if (content == null || chatId == null) {
@@ -63,7 +70,10 @@ public class MessageHandler {
                     .toList();
 
             // Actually adding message to list
-            Message message = messageService.addMessage(userId, chatId, content, replyMessageId, chatService.getCurrentKeyVersion(chatId));
+            Message message = messageService.addMessage(userId, chatId, content, replyMessageId, chatService.getCurrentKeyVersion(chatId), mediaIds);
+            message.setMediaFiles(
+                    mediaService.getAllMediaFromMessage(message.getId())
+            );
 
             // Generating answer
             MessagePacket answerPacket = buildBaseResponse(messagePacket, "Message sent successfully")
@@ -119,6 +129,11 @@ public class MessageHandler {
             }
             // Get recent messages
             List<Message> messages = messageService.getRecentMessages(chatId, offset);
+            for (var message : messages) {
+                message.setMediaFiles(
+                        mediaService.getAllMediaFromMessage(message.getId())
+                );
+            }
 
             // Generate answer with messages
             MessagePacket answerPacket = buildBaseResponse(messagePacket, "Got messages successfully")

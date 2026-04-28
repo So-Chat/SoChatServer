@@ -2,6 +2,8 @@ package org.yomirein.sochatserver.media;
 
 import lombok.*;
 
+import java.io.File;
+
 @Getter
 @Setter
 @AllArgsConstructor
@@ -20,4 +22,25 @@ public class Media {
     private Integer width;
     private Integer height;
     private Integer length;
+
+    private File file;
+
+    public Media(String mediaId, Long messageId,
+                 long senderId, String mimeType,
+                 String fileName, long fileSize,
+                 Integer width, Integer height, Integer length){
+
+        this.mediaId = mediaId;
+        this.messageId = messageId;
+        this.senderId = senderId;
+
+        this.mimeType = mimeType;
+        this.fileName = fileName;
+        this.fileSize = fileSize;
+
+        this.width = width;
+        this.height = height;
+        this.length = length;
+
+    }
 }

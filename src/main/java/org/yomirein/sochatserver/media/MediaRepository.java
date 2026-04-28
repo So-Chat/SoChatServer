@@ -6,6 +6,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 
@@ -53,15 +55,47 @@ public class MediaRepository {
         }
     }
 
-    public boolean update(Media media) {
-        String sql = "UPDATE media SET message_id = ?, width = ?, height = ?, length = ?, WHERE media_id = ?";
+    public List<Media> findAttachedMessage(long messageId) {
+        String sql = "SELECT * FROM media WHERE message_id = ?";
+
+        List<Media> out = new ArrayList<>();
+
+        try (Connection c = Database.getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+
+            ps.setLong(1, messageId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Media media = new Media(rs.getString("media_id"),
+                            rs.getLong("message_id"),
+                            rs.getLong("sender_id"),
+                            rs.getString("mime_type"),
+                            rs.getString("file_name"),
+                            rs.getLong("file_size"),
+                            rs.getObject("width", Integer.class),
+                            rs.getObject("height", Integer.class),
+                            rs.getObject("length", Integer.class));
+
+                    out.add(media);
+                }
+            }
+            return out;
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public boolean update(String mediaId, Long message_id, Integer width, Integer height, Integer length) {
+        String sql = "UPDATE media SET message_id = COALESCE(?, message_id), width = COALESCE(?, width), height = COALESCE(?, height), length = COALESCE(?, length) WHERE media_id = ?";
 
         try (Connection c = Database.getConnection()) {
             try (PreparedStatement psUpdate = c.prepareStatement(sql)) {
-                psUpdate.setLong(1, media.getMessageId());
-                psUpdate.setInt(2, media.getWidth());
-                psUpdate.setInt(3, media.getHeight());
-                psUpdate.setInt(4, media.getLength());
+                psUpdate.setObject(1, message_id);
+                psUpdate.setObject(2, width);
+                psUpdate.setObject(3, height);
+                psUpdate.setObject(4, length);
+                psUpdate.setObject(5, mediaId);
 
                 return psUpdate.executeUpdate() > 0;
             }

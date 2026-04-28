@@ -39,14 +39,19 @@ public class MediaHandler {
         }
 
         try {
-            File file = mediaService.getMediaFile(fullHttpRequest.uri());
+            Media media = mediaService.getMediaFile(fullHttpRequest.uri());
 
-            RandomAccessFile raf = new RandomAccessFile(file, "r");
+            RandomAccessFile raf = new RandomAccessFile(media.getFile(), "r");
             HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
 
-            String contentType = URLConnection.guessContentTypeFromName(file.getName());
+            String contentType = URLConnection.guessContentTypeFromName(media.getFile().getName());
             response.headers().set(HttpHeaderNames.CONTENT_TYPE, contentType != null ? contentType : "application/octet-stream");
             response.headers().set(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED);
+
+            response.headers().set(
+                    HttpHeaderNames.CONTENT_DISPOSITION,
+                    "attachment; filename=\"" + media.getFileName() + "\""
+            );
 
             ctx.write(response);
             ctx.writeAndFlush(new HttpChunkedInput(new ChunkedFile(raf)))
@@ -72,7 +77,7 @@ public class MediaHandler {
                 token = authHeader.substring(7).trim();
             }
 
-            List<FileUpload> filesToProcess = new ArrayList<>();
+            FileUpload file = null;
 
             while (decoder.hasNext()) {
                 InterfaceHttpData data = decoder.next();
@@ -81,13 +86,13 @@ public class MediaHandler {
                     Attribute attribute = (Attribute) data;
 
                 } else if (data.getHttpDataType() == InterfaceHttpData.HttpDataType.FileUpload) {
-                    filesToProcess.add((FileUpload) data);
+                    file = (FileUpload) data;
                 }
             }
-
-            for (FileUpload file : filesToProcess) {
+            if (file != null) {
                 try {
-                    mediaService.saveUploadedFile(token, file);
+                    String mediaId = mediaService.saveUploadedFile(token, file);
+                    sendHttp(ctx, OK, mediaId);
                 } catch (MediaException e) {
                     sendHttp(ctx, e.getStatus(), e.getMessage());
                 } catch (IOException e) {
@@ -95,8 +100,6 @@ public class MediaHandler {
                     throw new RuntimeException(e);
                 }
             }
-            sendHttp(ctx, OK, "File uploaded");
-
         } catch (Exception e) {
             e.printStackTrace();
             sendHttp(ctx, INTERNAL_SERVER_ERROR, "Upload failed");

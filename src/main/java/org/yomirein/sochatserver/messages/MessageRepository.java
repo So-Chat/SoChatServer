@@ -2,6 +2,7 @@ package org.yomirein.sochatserver.messages;
 
 import org.yomirein.sochatserver.Database;
 import org.yomirein.sochatserver.chats.Participant;
+import org.yomirein.sochatserver.media.Media;
 
 import java.sql.*;
 import java.time.LocalDateTime;

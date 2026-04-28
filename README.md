@@ -17,16 +17,16 @@ What was done / Что было сделано:
 
 ## Libraries used in project / Библиотеки использованные в проекте
 
-| Library   | Version |
-| ---------- | ----- |
-| Jackson   | 2.20.1 |
-| Netty | 4.2.9 Final |
-| JJWT | 0.11.5 |
-| slf4j-simple | 2.0.9 |
-| HikariCP | 5.1.0 |
-| PostgreSQL | 42.7.1 |
-| Lombok | 1.18.42 |
-
+| Library           | Version     |
+|-------------------|-------------|
+| Jackson           | 2.20.1      |
+| Netty             | 4.2.9 Final |
+| JJWT              | 0.11.5      |
+| slf4j-simple      | 2.0.9       |
+| HikariCP          | 5.1.0       |
+| PostgreSQL        | 42.7.1      |
+| Lombok            | 1.18.42     |
+| Apache Commons IO | 2.22.0            |
 
 Eng: I'm currently working on it as a college project, and it will continue if people show interest after first working release.
 

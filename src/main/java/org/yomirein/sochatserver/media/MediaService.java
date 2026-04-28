@@ -1,11 +1,9 @@
 package org.yomirein.sochatserver.media;
 
-import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.multipart.*;
 import lombok.AllArgsConstructor;
 import org.apache.commons.io.FilenameUtils;
-import org.yomirein.sochatserver.chats.Chat;
 import org.yomirein.sochatserver.chats.ChatService;
 import org.yomirein.sochatserver.users.User;
 import org.yomirein.sochatserver.users.UserService;
@@ -30,7 +28,7 @@ public class MediaService {
     private final ChatService chatService;
     private final UserService userService;
 
-    public File getMediaFile(String uri) throws MediaException {
+    public Media getMediaFile(String uri) throws MediaException {
         if (!uri.startsWith("/media/")) {
             throw new MediaException(HttpResponseStatus.NOT_FOUND, "Not found");
         }
@@ -54,7 +52,9 @@ public class MediaService {
         if (!file.exists() || !file.isFile()) {
             throw new MediaException(HttpResponseStatus.NOT_FOUND, "File not found");
         }
-        return new File(file.getParent(), media.getFileName());
+        media.setFile(file);
+
+        return media;
     }
 
 
@@ -93,6 +93,14 @@ public class MediaService {
         }
 
         return media.getMediaId();
+    }
+
+    public List<Media> getAllMediaFromMessage(long messageId) {
+        return mediaRepository.findAttachedMessage(messageId);
+    }
+
+    public boolean attachMessage(String mediaId, long messageId){
+        return mediaRepository.update(mediaId, messageId, null, null, null);
     }
 
 }
