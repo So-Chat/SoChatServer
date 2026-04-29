@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.yomirein.sochatserver.utils.MessageSender.sendHttp;
@@ -58,7 +59,7 @@ public class MediaService {
     }
 
 
-    // I'm really trying to figure out how it works...
+    //
     public String saveUploadedFile(String token, FileUpload fileUpload) throws MediaException, IOException {
         User user = userService.getUserByToken(token);
         String fileId = UUID.randomUUID().toString();
@@ -95,12 +96,26 @@ public class MediaService {
         return media.getMediaId();
     }
 
+    public void deleteMedia(String mediaId) throws MediaException {
+        Optional<Media> mediaOptional = mediaRepository.findById(mediaId);
+
+        if (mediaOptional.isEmpty()) { throw new MediaException(HttpResponseStatus.NOT_FOUND, "Not found"); }
+        mediaRepository.deleteById(mediaId);
+
+        String dir1 = mediaId.substring(0, 2);
+        String dir2 = mediaId.substring(2, 4);
+
+        // media/7a/3b/7a3b...
+        Path folder = root.resolve(dir1, dir2, mediaId + "." + FilenameUtils.getExtension(mediaOptional.get().getFileName()));
+        folder.toFile().delete();
+    }
+
     public List<Media> getAllMediaFromMessage(long messageId) {
         return mediaRepository.findAttachedMessage(messageId);
     }
 
-    public boolean attachMessage(String mediaId, long messageId){
-        return mediaRepository.update(mediaId, messageId, null, null, null);
+    public void attachMessage(String mediaId, long messageId){
+        mediaRepository.update(mediaId, messageId, null, null, null);
     }
 
 }

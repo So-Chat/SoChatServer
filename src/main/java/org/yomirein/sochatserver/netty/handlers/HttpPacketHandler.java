@@ -98,8 +98,10 @@ public class HttpPacketHandler extends SimpleChannelInboundHandler<FullHttpReque
             else if (uri.startsWith("/media")) {
                 mediaHandler.uploadMedia(channelHandlerContext, fullHttpRequest);
             }
-
-
+        } else if (fullHttpRequest.method().equals(HttpMethod.DELETE)) {
+            if (uri.contains("/media")){
+                mediaHandler.deleteMedia(channelHandlerContext, fullHttpRequest);
+            }
         }
 
     }

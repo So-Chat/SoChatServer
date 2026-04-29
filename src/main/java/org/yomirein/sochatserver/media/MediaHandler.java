@@ -33,11 +33,6 @@ public class MediaHandler {
             return;
         }
 
-        if (fullHttpRequest.method() != HttpMethod.GET) {
-            MessageSender.sendHttp(ctx, METHOD_NOT_ALLOWED, "Only GET allowed");
-            return;
-        }
-
         try {
             Media media = mediaService.getMediaFile(fullHttpRequest.uri());
 
@@ -105,6 +100,14 @@ public class MediaHandler {
             sendHttp(ctx, INTERNAL_SERVER_ERROR, "Upload failed");
         } finally {
             decoder.destroy();
+        }
+    }
+
+    public void deleteMedia(ChannelHandlerContext ctx, FullHttpRequest fullHttpRequest) {
+        try {
+            mediaService.deleteMedia(fullHttpRequest.uri());
+        } catch (MediaException e) {
+            sendHttp(ctx, e.getStatus(), e.getMessage());
         }
     }
 
