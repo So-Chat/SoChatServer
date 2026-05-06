@@ -285,6 +285,7 @@ public class Main {
                     width INTEGER,
                     height INTEGER,
                     length INTEGER,
+                    nonce TEXT,
                     FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE
                );
             """

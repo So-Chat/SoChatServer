@@ -68,6 +68,8 @@ public class MediaHandler {
             String token = null;
 
             String authHeader = request.headers().get(HttpHeaderNames.AUTHORIZATION);
+            String nonce = request.headers().get("x-nonce");
+
             if (authHeader != null && authHeader.startsWith("Bearer ")) {
                 token = authHeader.substring(7).trim();
             }
@@ -86,7 +88,7 @@ public class MediaHandler {
             }
             if (file != null) {
                 try {
-                    String mediaId = mediaService.saveUploadedFile(token, file);
+                    String mediaId = mediaService.saveUploadedFile(token, file, nonce);
                     sendHttp(ctx, OK, mediaId);
                 } catch (MediaException e) {
                     sendHttp(ctx, e.getStatus(), e.getMessage());

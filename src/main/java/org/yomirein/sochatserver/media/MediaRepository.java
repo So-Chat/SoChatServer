@@ -32,7 +32,8 @@ public class MediaRepository {
                             rs.getLong("file_size"),
                             rs.getObject("width", Integer.class),
                             rs.getObject("height", Integer.class),
-                            rs.getObject("length", Integer.class)
+                            rs.getObject("length", Integer.class),
+                            rs.getString("nonce")
                     );
                     return Optional.of(media);
                 }
@@ -74,7 +75,9 @@ public class MediaRepository {
                             rs.getLong("file_size"),
                             rs.getObject("width", Integer.class),
                             rs.getObject("height", Integer.class),
-                            rs.getObject("length", Integer.class));
+                            rs.getObject("length", Integer.class),
+                            rs.getString("nonce")
+                    );
 
                     out.add(media);
                 }
@@ -104,8 +107,8 @@ public class MediaRepository {
         }
     }
 
-    public Media save(String mediaId, long userId, String mimeType, String fileName, long fileSize) {
-        String sql = "INSERT INTO media(media_id, sender_id, mime_type, file_name, file_size) VALUES(?,?,?,?,?)";
+    public Media save(String mediaId, long userId, String mimeType, String fileName, long fileSize, String nonce) {
+        String sql = "INSERT INTO media(media_id, sender_id, mime_type, file_name, file_size, nonce) VALUES(?,?,?,?,?,?)";
 
         try (Connection c = Database.getConnection()) {
             try (PreparedStatement psInsert = c.prepareStatement(sql)) {
@@ -114,6 +117,7 @@ public class MediaRepository {
                 psInsert.setString(3, mimeType);
                 psInsert.setString(4, fileName);
                 psInsert.setLong(5, fileSize);
+                psInsert.setString(6, nonce);
 
                 psInsert.executeUpdate();
             }
@@ -121,7 +125,7 @@ public class MediaRepository {
                     mediaId, null, userId,
                     mimeType, fileName,
                     fileSize,
-                    null, null, null);
+                    null, null, null, nonce);
 
         } catch (SQLException e) {
             throw new RuntimeException(e);

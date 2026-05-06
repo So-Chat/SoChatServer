@@ -23,12 +23,14 @@ public class Media {
     private Integer height;
     private Integer length;
 
+    private String nonce;
+
     private File file;
 
     public Media(String mediaId, Long messageId,
                  long senderId, String mimeType,
                  String fileName, long fileSize,
-                 Integer width, Integer height, Integer length){
+                 Integer width, Integer height, Integer length, String nonce){
 
         this.mediaId = mediaId;
         this.messageId = messageId;
@@ -41,6 +43,8 @@ public class Media {
         this.width = width;
         this.height = height;
         this.length = length;
+
+        this.nonce = nonce;
 
     }
 }
