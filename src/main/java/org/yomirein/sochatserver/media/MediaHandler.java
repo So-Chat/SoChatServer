@@ -112,6 +112,4 @@ public class MediaHandler {
             sendHttp(ctx, e.getStatus(), e.getMessage());
         }
     }
-
-
 }
