@@ -31,7 +31,7 @@ public class ConfigReader {
             ).getParent();
 
             // Getting config.properties location
-            Path configPath = Paths.get(basePath, "config.properties");
+            Path configPath = Paths.get("config.properties");
 
             // If it not exists create it
             if (Files.notExists(configPath)) {
@@ -49,7 +49,8 @@ public class ConfigReader {
                 config.put(key, properties.getProperty(key));
             }
 
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new RuntimeException("Failed to load config", e);
         }
 

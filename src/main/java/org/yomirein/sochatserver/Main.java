@@ -62,7 +62,8 @@ public class Main {
 
             saveConfig(properties, input, dbName);
 
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             System.out.println("Exit with error: " + e);
         }
     }
@@ -75,7 +76,8 @@ public class Main {
 
         try (OutputStream out = new FileOutputStream("config.properties")) {
             prop.store(out, "");
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
@@ -137,9 +139,16 @@ public class Main {
 
             if (option == 2) {
                 createDatabase(dbName, ds, properties);
-                initTypes(ds);
-                initColumns(ds);
+                try (HikariDataSource soDs = dataSourceFactory(input.ipPort, dbName, input.user, input.password )) {
+                    initTypes(soDs);
+                    initColumns(soDs);
+                }
+                catch (Exception e)
+                {
+                    System.out.println("Exit with error:"+ e);
+                }
             }
+
 
             return dbName;
         }
@@ -154,7 +163,8 @@ public class Main {
             properties.setProperty("db.name", name);
             System.out.println("Created database successfully");
 
-        }catch (Exception e){
+        }
+        catch (Exception e){
             e.printStackTrace();
         }
     }
@@ -174,7 +184,8 @@ public class Main {
             st.executeUpdate("""
                 CREATE TYPE chat_type AS ENUM ('PRIVATE', 'GROUP_INSECURE','GROUP_SECURE', 'CHANNEL');
             """);
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -291,7 +302,8 @@ public class Main {
             """
             );
 
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -321,6 +333,7 @@ public class Main {
             String input = in.readLine();
             if (!input.isEmpty()) { return input; }
             else { return prompt; }
-        } catch (IOException _) { return prompt; }
+        }
+        catch (IOException _) { return prompt; }
     }
 }
