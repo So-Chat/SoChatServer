@@ -2,6 +2,7 @@ package org.yomirein.sochatserver.common.service;
 
 import org.yomirein.sochatserver.utils.JsonConfig;
 import org.yomirein.sochatserver.utils.JwtService;
+import org.yomirein.sochatserver.utils.JwtType;
 import org.yomirein.sochatserver.utils.KeyParser;
 import org.yomirein.sochatserver.common.models.MessagePacket;
 import org.yomirein.sochatserver.common.managers.ChallengeManager;
@@ -72,7 +73,7 @@ public class AuthService {
                             .put("success", true)
                             .put("server_message", "Login success")
                             .put("user", JsonConfig.MAPPER.writeValueAsString(user))
-                            .put("token", JwtService.generateToken(user.getUsername()))
+                            .put("token", JwtService.generateToken(user.getUsername(), JwtType.AUTH, 60 * 24))
                             .build();
                 }
 

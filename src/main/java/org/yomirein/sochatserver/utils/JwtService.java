@@ -9,7 +9,9 @@ import io.jsonwebtoken.security.Keys;
 
 import java.security.Key;
 import java.util.Base64;
+import java.util.Collections;
 import java.util.Date;
+import java.util.Map;
 import java.util.function.Function;
 
 public class JwtService {
@@ -29,14 +31,25 @@ public class JwtService {
         SIGNING_KEY = Keys.hmacShaKeyFor(Base64.getDecoder().decode(SECRET));
     }
 
-    // Generate JWT Token active for 1 day
-    public static String generateToken(String username) {
+
+    public static String generateToken(String subject, JwtType type, int minutes) {
+        Date exp = new Date(System.currentTimeMillis() + 1000L * 60 * minutes);
+        return generateToken(subject, exp, type, Collections.emptyMap());
+    }
+    public static String generateToken(String subject, int minutes, JwtType type, Map<String, Object> values) {
+        Date exp = new Date(System.currentTimeMillis() + 1000L * 60 * minutes);
+        return generateToken(subject, exp, type, values);
+    }
+
+    // Main JWT Generation
+    public static String generateToken(String subject, Date expirationDate, JwtType type, Map<String, Object> values) {
         Date now = new Date();
-        Date exp = new Date(now.getTime() + 1000L * 60 * 60 * 24);
+        values.put("type", type.toString());
         return Jwts.builder()
-                .setSubject(username)
+                .setClaims(values)
+                .setSubject(subject)
                 .setIssuedAt(now)
-                .setExpiration(exp)
+                .setExpiration(expirationDate)
                 .signWith(SIGNING_KEY, SignatureAlgorithm.HS256)
                 .compact();
     }
