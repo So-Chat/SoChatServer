@@ -1,6 +1,8 @@
 package org.yomirein.sochatserver;
 
 import org.yomirein.sochatserver.auth.AuthHandler;
+import org.yomirein.sochatserver.calls.CallHandler;
+import org.yomirein.sochatserver.calls.CallService;
 import org.yomirein.sochatserver.chats.ChatHandler;
 import org.yomirein.sochatserver.chats.ChatService;
 import org.yomirein.sochatserver.common.managers.ChallengeManager;
@@ -27,17 +29,6 @@ public class SoChat {
 
         // BIG INITIALIZATION
         //
-        // It has
-        // Authorization (Repository, Service, Handler)
-        // Chats (Repository, Service, Handler)
-        // Sessions (Manager)
-        // Challenges (Manager)
-        // Friendships (Repository, Service, Handler)
-        // Messages (Repository, Service, Handler)
-        // Users (Repository, Service, Handler)
-        //
-        // Server itself
-        //
         // I separated every type
         //
         // And running server, it works on HTTP and WebSocket(Class named HttpServer, because WebSocket works on HTTP anyway)
@@ -62,6 +53,7 @@ public class SoChat {
         ChatService chatService = new ChatService(userService, chatRepository);
         MediaService mediaService = new MediaService(mediaRepository, chatService, userService);
         MessageService messageService = new MessageService(messageRepository, mediaService);
+        CallService callService = new CallService(sessionManager);
 
         // Handlers initialization
         AuthHandler authHandler = new AuthHandler(userRepository,sessionManager);
@@ -70,10 +62,11 @@ public class SoChat {
         ChatHandler chatHandler = new ChatHandler(chatService, userService, messageService, sessionManager);
         MessageHandler messageHandler = new MessageHandler(messageService, chatService, userService, mediaService, sessionManager);
         MediaHandler mediaHandler = new MediaHandler(mediaService);
+        CallHandler callHandler = new CallHandler(callService, friendshipService, userService, chatService, sessionManager);
 
         // Server initialization
         HttpServer httpServer = new HttpServer(8081, authService, mediaHandler, sessionManager, authHandler, friendsHandler,
-                userHandler, chatHandler, messageHandler);
+                userHandler, chatHandler, messageHandler, callHandler);
 
         // Run everything
         httpServer.run();

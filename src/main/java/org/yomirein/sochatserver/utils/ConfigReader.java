@@ -34,8 +34,11 @@ public class ConfigReader {
             Path configPath = Paths.get("config.properties");
 
             // If it not exists create it
-            if (Files.notExists(configPath)) {
-                Files.createDirectories(configPath.getParent());
+            if (Files.exists(configPath)) {
+                if (Files.isDirectory(configPath)) {
+                    throw new RuntimeException("config.properties is a directory, expected file");
+                }
+            } else {
                 Files.createFile(configPath);
             }
 

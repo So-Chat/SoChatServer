@@ -133,5 +133,19 @@ public class FriendshipService {
         return friendshipRepository.findByUserOrFriend(u, u);
     }
 
+    public Boolean isFriends(long userId1, long userId2) {
+        try {
+            User u1 = userRepository.findById(userId1).orElseThrow();
+            User u2 = userRepository.findById(userId2).orElseThrow();
+
+            Friendship friendship = friendshipRepository.findByUserAndFriend(u1, u2).orElseThrow();
+
+            return friendship.getStatus() == FriendshipStatus.ACCEPTED;
+        }
+        catch (RuntimeException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 
 }

@@ -92,7 +92,9 @@ public class MessageSender {
     // Notify every connected user on specific account
     public static void notifyUser(User user, MessagePacket packet, SessionManager sessionManager) {
         Set<Session> sessions = sessionManager.getUserSessions(user);
-
+        notifyUser(sessions, packet);
+    }
+    public static void notifyUser(Set<Session> sessions, MessagePacket packet) {
         for (Session session : sessions) {
             session.getChannel().writeAndFlush(packet);
         }

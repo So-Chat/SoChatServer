@@ -5,6 +5,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import lombok.RequiredArgsConstructor;
 import org.yomirein.sochatserver.auth.AuthHandler;
+import org.yomirein.sochatserver.calls.CallHandler;
 import org.yomirein.sochatserver.chats.ChatHandler;
 import org.yomirein.sochatserver.messages.MessageHandler;
 import org.yomirein.sochatserver.sessions.SessionManager;
@@ -27,7 +28,7 @@ public class WsPacketHandler extends SimpleChannelInboundHandler<MessagePacket> 
     private final UsersHandler usersHandler;
     private final ChatHandler chatHandler;
     private final MessageHandler messageHandler;
-
+    private final CallHandler callHandler;
 
     // Handling every packet, they separated by their appointment
     @Override
@@ -74,6 +75,14 @@ public class WsPacketHandler extends SimpleChannelInboundHandler<MessagePacket> 
             case "message_list": withAuth(channelHandlerContext, messagePacket, messageHandler::getRecentMessages); break;
             case "message_get": withAuth(channelHandlerContext, messagePacket, messageHandler::getMessage); break;
 
+
+            // CALLS MANAGEMENT
+            case "call_offer": withAuth(channelHandlerContext, messagePacket, callHandler::call); break;
+            case "call_accept": withAuth(channelHandlerContext, messagePacket, callHandler::acceptCall); break;
+
+            case "call_answer": withAuth(channelHandlerContext, messagePacket, callHandler::answerRtc); break;
+            case "call_ice": withAuth(channelHandlerContext, messagePacket, callHandler::iceRtc); break;
+            case "call_end": withAuth(channelHandlerContext, messagePacket, callHandler::endCall); break;
         }
     }
 

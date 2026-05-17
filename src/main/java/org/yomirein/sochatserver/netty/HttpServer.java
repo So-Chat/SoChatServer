@@ -18,6 +18,7 @@ import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yomirein.sochatserver.auth.AuthHandler;
+import org.yomirein.sochatserver.calls.CallHandler;
 import org.yomirein.sochatserver.chats.ChatHandler;
 import org.yomirein.sochatserver.friendship.FriendsHandler;
 import org.yomirein.sochatserver.media.MediaHandler;
@@ -47,6 +48,7 @@ public class HttpServer {
     private final UsersHandler usersHandler;
     private final ChatHandler chatHandler;
     private final MessageHandler messageHandler;
+    private final CallHandler callHandler;
 
     // Adding logger
     private final Logger logger = LoggerFactory.getLogger(HttpServer.class);
@@ -92,7 +94,7 @@ public class HttpServer {
                             // WsPacketHandler init, with decoders and encoders
                             p.addLast(new PacketDecoder());
                             p.addLast(new WsPacketHandler(sessionManager, authHandler,
-                                    friendsHandler, usersHandler, chatHandler, messageHandler));
+                                    friendsHandler, usersHandler, chatHandler, messageHandler, callHandler));
                             p.addLast(new PacketEncoder());
                         }
                     });

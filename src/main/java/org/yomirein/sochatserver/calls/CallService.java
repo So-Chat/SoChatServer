@@ -1,13 +1,11 @@
 package org.yomirein.sochatserver.calls;
 
 import lombok.RequiredArgsConstructor;
-import org.yomirein.sochatserver.chats.Chat;
+import org.yomirein.sochatserver.calls.p2p.P2PRoom;
 import org.yomirein.sochatserver.sessions.Session;
 import org.yomirein.sochatserver.sessions.SessionManager;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @RequiredArgsConstructor
@@ -16,8 +14,10 @@ public class CallService {
     private final SessionManager sessionManager;
     Map<Long, P2PRoom> callRooms = new HashMap<Long, P2PRoom>();
 
-    public void offer(long chatId, Session session) {
+    public void offer(long chatId, Session session, String offerSdp) {
         P2PRoom p2pRoom = new P2PRoom(session);
+        p2pRoom.setOfferSdp(offerSdp);
+
         callRooms.put(chatId, p2pRoom);
     }
 
@@ -28,5 +28,14 @@ public class CallService {
 
     public void deleteRoom(long chatId) {
         callRooms.remove(chatId);
+    }
+
+    public P2PRoom findRoomBySession(Session session) {
+        for (P2PRoom room : callRooms.values()) {
+            if (room.getSession1() == session || room.getSession2() == session) {
+                return room;
+            }
+        }
+        return null;
     }
 }

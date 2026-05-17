@@ -8,10 +8,7 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 
 import java.security.Key;
-import java.util.Base64;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 
 public class JwtService {
@@ -34,7 +31,7 @@ public class JwtService {
 
     public static String generateToken(String subject, JwtType type, int minutes) {
         Date exp = new Date(System.currentTimeMillis() + 1000L * 60 * minutes);
-        return generateToken(subject, exp, type, Collections.emptyMap());
+        return generateToken(subject, exp, type, new HashMap<String, Object>());
     }
     public static String generateToken(String subject, int minutes, JwtType type, Map<String, Object> values) {
         Date exp = new Date(System.currentTimeMillis() + 1000L * 60 * minutes);
