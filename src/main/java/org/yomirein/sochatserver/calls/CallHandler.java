@@ -59,9 +59,7 @@ public class CallHandler {
             if (userSessions.isEmpty()) {
                 MessagePacket messagePacket1 = MessageSender.buildBaseResponse(messagePacket, "User is offline").build();
                 channelHandlerContext.channel().writeAndFlush(messagePacket1);
-            }
-
-            String offer = messagePacket.getPayload().get("offer").asText();
+            }String offer = messagePacket.getPayload().get("sdp").asText();
 
             Chat chat = chatService.getChatByUsers(userId, toUser.getId());
 
@@ -77,7 +75,7 @@ public class CallHandler {
 
     public void acceptCall(ChannelHandlerContext channelHandlerContext, MessagePacket messagePacket, Long userId) {
         try {
-            Long toId = messagePacket.getPayload().get("id").asLong();
+            Long toId = messagePacket.getPayload().get("call_id").asLong();
             User toUser = userService.getUser(toId);
 
             Chat chat = chatService.getChatByUsers(userId, toUser.getId());
@@ -136,16 +134,22 @@ public class CallHandler {
 
             String candidate = messagePacket.getPayload().get("candidate").asText();
             String sdpMid = messagePacket.getPayload().get("sdp_mid").asText();
-            String sdpMLineIndex = messagePacket.getPayload().get("sdp_mline_index").asText();
+            int sdpMLineIndex = messagePacket.getPayload().get("sdp_mline_index").asInt();
 
-            MessagePacket icePacket = new MessagePacket.Builder()
-                    .type("call_ice")
-                    .put("candidate", candidate)
-                    .put("sdp_mid", sdpMid)
-                    .put("sdp_mline_index", sdpMLineIndex)
-                    .build();
+            if (otherSession == null) {
+                IceCandidatePayload iceCandidatePayload = new IceCandidatePayload(candidate, sdpMid, sdpMLineIndex);
+                p2pRoom.getCallerIce().add(iceCandidatePayload);
+            }
+            else {
+                MessagePacket icePacket = new MessagePacket.Builder()
+                        .type("call_ice")
+                        .put("candidate", candidate)
+                        .put("sdp_mid", sdpMid)
+                        .put("sdp_mline_index", sdpMLineIndex)
+                        .build();
 
-            otherSession.getChannel().writeAndFlush(icePacket);
+                otherSession.getChannel().writeAndFlush(icePacket);
+            }
 
         } catch (Exception e) {
             sendError(channelHandlerContext, messagePacket, e.getMessage());
