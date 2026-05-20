@@ -36,6 +36,7 @@ public class WsPacketHandler extends SimpleChannelInboundHandler<MessagePacket> 
         switch (messagePacket.getType()) {
             // ping-pong and authentication without withAuth
             // PING PONG
+            // May be deleted later if I replace it with low-level ping-pong
             case "ping": ping(channelHandlerContext.channel()); break;
             // Authentication
             case "authenticate": authHandler.authorize(channelHandlerContext, messagePacket); break;

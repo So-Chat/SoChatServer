@@ -14,6 +14,7 @@ import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.stream.ChunkedWriteHandler;
+import io.netty.handler.timeout.IdleStateHandler;
 import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +25,7 @@ import org.yomirein.sochatserver.friendship.FriendsHandler;
 import org.yomirein.sochatserver.media.MediaHandler;
 import org.yomirein.sochatserver.media.MediaService;
 import org.yomirein.sochatserver.messages.MessageHandler;
+import org.yomirein.sochatserver.netty.handlers.HeartbeatHandler;
 import org.yomirein.sochatserver.sessions.SessionManager;
 import org.yomirein.sochatserver.netty.codec.PacketDecoder;
 import org.yomirein.sochatserver.netty.codec.PacketEncoder;
@@ -84,6 +86,10 @@ public class HttpServer {
 
                             // WebSocket server protocol init
                             p.addLast(new WebSocketServerProtocolHandler("/ws", null, true));
+
+                            // Heartbeat for low-level ping pongs
+                            p.addLast(new IdleStateHandler(0, 20, 0));
+                            p.addLast(new HeartbeatHandler(sessionManager));
 
                             // Cors
                             p.addLast(new CorsHandler(corsConfig));

@@ -47,7 +47,7 @@ public class CallHandler {
 
     public void call(ChannelHandlerContext channelHandlerContext, MessagePacket messagePacket, Long userId) {
         try {
-            Long toId = messagePacket.getPayload().get("id").asLong();
+            Long toId = messagePacket.getPayload().get("callee_id").asLong();
             User toUser = userService.getUser(toId);
 
             if (!friendshipService.isFriends(userId, toUser.getId())) {
@@ -70,6 +70,7 @@ public class CallHandler {
             MessageSender.notifyUser(userSessions, messagePacket1);
         } catch (Exception e) {
             sendError(channelHandlerContext, messagePacket, e.getMessage());
+            throw new RuntimeException(e);
         }
     }
 
@@ -85,8 +86,8 @@ public class CallHandler {
             callService.answer(chat.getId(), sessionManager.getSession(channelHandlerContext.channel()));
 
             MessagePacket offerPacket = new MessagePacket.Builder()
-                    .type("call_offer")
-                    .put("offer", p2pRoom.getOfferSdp()).build();
+                    .type("call_accept")
+                    .put("sdp", p2pRoom.getOfferSdp()).build();
             channelHandlerContext.channel().writeAndFlush(offerPacket);
 
             for (IceCandidatePayload iceCandidatePayload : p2pRoom.getCallerIce()) {
@@ -102,6 +103,7 @@ public class CallHandler {
 
         } catch (Exception e) {
             sendError(channelHandlerContext, messagePacket, e.getMessage());
+            throw new RuntimeException(e);
         }
     }
 
@@ -112,16 +114,17 @@ public class CallHandler {
 
             Session otherSession = p2pRoom.getOther(userSession);
 
-            String answer = messagePacket.getPayload().get("answer").asText();
+            String answer = messagePacket.getPayload().get("sdp").asText();
 
             MessagePacket answerPacket = new MessagePacket.Builder()
-                    .type("call_ice")
-                    .put("answer", answer)
+                    .type("call_answer")
+                    .put("sdp", answer)
                     .build();
 
             otherSession.getChannel().writeAndFlush(answerPacket);
         } catch (Exception e) {
             sendError(channelHandlerContext, messagePacket, e.getMessage());
+            throw new RuntimeException(e);
         }
     }
 
@@ -153,6 +156,7 @@ public class CallHandler {
 
         } catch (Exception e) {
             sendError(channelHandlerContext, messagePacket, e.getMessage());
+            throw new RuntimeException(e);
         }
     }
 
@@ -174,6 +178,7 @@ public class CallHandler {
 
         } catch (Exception e) {
             sendError(channelHandlerContext, messagePacket, e.getMessage());
+            throw new RuntimeException(e);
         }
     }
 
