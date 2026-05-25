@@ -30,7 +30,6 @@ public class HttpPacketHandler extends SimpleChannelInboundHandler<FullHttpReque
     protected void channelRead0(ChannelHandlerContext channelHandlerContext, FullHttpRequest fullHttpRequest) throws Exception {
 
         String uri = fullHttpRequest.uri();
-        System.out.println(uri);
         // Basic answer if someone got into ./
         if ("/".equals(fullHttpRequest.uri())) {
             FullHttpResponse response = new DefaultFullHttpResponse(
