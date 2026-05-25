@@ -22,4 +22,6 @@ public class Chat {
     private Message lastMessage;
     private SenderKey lastSenderKey;
     private Integer unreadMessagesCount;
+
+    private boolean isInCall = false;
 }

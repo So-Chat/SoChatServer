@@ -59,12 +59,22 @@ public class MessageSender {
     public static void sendError(ChannelHandlerContext ctx,
                                  MessagePacket request,
                                  String errorMessage) {
-        MessagePacket packet = new MessagePacket.Builder()
-                .type(request.getType())
-                .put("success", false)
-                .put("requestId", request.getPayload().get("requestId").asText())
-                .put("server_message", errorMessage)
-                .build();
+        MessagePacket packet;
+        if (request.getPayload().get("requestId") != null) {
+            packet = new MessagePacket.Builder()
+                    .type(request.getType())
+                    .put("success", false)
+                    .put("requestId", request.getPayload().get("requestId").asText())
+                    .put("server_message", errorMessage)
+                    .build();
+        }
+        else {
+             packet = new MessagePacket.Builder()
+                    .type(request.getType())
+                    .put("success", false)
+                    .put("server_message", errorMessage)
+                    .build();
+        }
 
         ctx.channel().writeAndFlush(packet);
     }

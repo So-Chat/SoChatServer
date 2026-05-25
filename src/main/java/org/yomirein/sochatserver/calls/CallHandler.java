@@ -14,6 +14,7 @@ import org.yomirein.sochatserver.users.User;
 import org.yomirein.sochatserver.users.UserService;
 import org.yomirein.sochatserver.utils.MessageSender;
 
+import java.util.Optional;
 import java.util.Set;
 
 import static org.yomirein.sochatserver.utils.MessageSender.sendError;
@@ -66,7 +67,7 @@ public class CallHandler {
             callService.offer(chat.getId(), sessionManager.getSession(channelHandlerContext.channel()), offer);
 
             MessagePacket messagePacket1 = MessageSender.buildBaseResponse(
-                    messagePacket, "Someone calling you").put("userId", userId).build();
+                    messagePacket, "Someone calling you").put("chat_id", chat.getId()).build();
             MessageSender.notifyUser(userSessions, messagePacket1);
         } catch (Exception e) {
             sendError(channelHandlerContext, messagePacket, e.getMessage());
@@ -110,7 +111,10 @@ public class CallHandler {
     public void answerRtc(ChannelHandlerContext channelHandlerContext, MessagePacket messagePacket, Long userId) {
         try {
             Session userSession = sessionManager.getSession(channelHandlerContext.channel());
-            P2PRoom p2pRoom = callService.findRoomBySession(userSession);
+            P2PRoom p2pRoom = callService.findRoomBySession(userSession).orElseThrow(
+                    () -> new IllegalStateException("Session is not in any call!")
+            );
+
 
             Session otherSession = p2pRoom.getOther(userSession);
 
@@ -131,7 +135,9 @@ public class CallHandler {
     public void iceRtc(ChannelHandlerContext channelHandlerContext, MessagePacket messagePacket, Long userId) {
         try {
             Session userSession = sessionManager.getSession(channelHandlerContext.channel());
-            P2PRoom p2pRoom = callService.findRoomBySession(userSession);
+            P2PRoom p2pRoom = callService.findRoomBySession(userSession).orElseThrow(
+                    () -> new IllegalStateException("Session is not in any call!")
+            );
 
             Session otherSession = p2pRoom.getOther(userSession);
 
@@ -163,7 +169,9 @@ public class CallHandler {
     public void endCall(ChannelHandlerContext channelHandlerContext, MessagePacket messagePacket, Long userId) {
         try {
             Session userSession = sessionManager.getSession(channelHandlerContext.channel());
-            P2PRoom p2pRoom = callService.findRoomBySession(userSession);
+            P2PRoom p2pRoom = callService.findRoomBySession(userSession).orElseThrow(
+                    () -> new IllegalStateException("Session is not in any call!")
+            );
 
             Chat chat = chatService.getChatByUsers(p2pRoom.getOther(userSession).getUser().getId(), userSession.getUser().getId());
             callService.deleteRoom(chat.getId());

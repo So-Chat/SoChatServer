@@ -3,6 +3,7 @@ package org.yomirein.sochatserver.chats;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.RequiredArgsConstructor;
+import org.yomirein.sochatserver.calls.CallService;
 import org.yomirein.sochatserver.common.models.MessagePacket;
 import org.yomirein.sochatserver.messages.Message;
 import org.yomirein.sochatserver.messages.MessageService;
@@ -22,6 +23,7 @@ public class ChatHandler {
     private final ChatService chatService;
     private final UserService userService;
     private final MessageService messageService;
+    private final CallService callService;
 
     private final SessionManager sessionManager;
 
@@ -44,6 +46,9 @@ public class ChatHandler {
 
             chat.setParticipants(chatService.getParticipantList(chat.getId()));
             chat.setSenderKeys(chatService.getUserSenderKeysByChat(chat.getId(), fromUser.getId()));
+
+            chat.setInCall(callService.isChatInCall(chat.getId()));
+
             mapPrivateChat(chat, fromUser.getId(), chatService.getParticipantList(chat.getId()));
             MessagePacket answerPacket = buildBaseResponse(messagePacket, "Chat got successfully")
                     .put("chat", JsonConfig.MAPPER.writeValueAsString(chat))
@@ -64,6 +69,8 @@ public class ChatHandler {
             chats.forEach(chat -> {
                 List<Participant> participants = chatService.getParticipantList(chat.getId());
                 List<SenderKey> senderKeys = chatService.getUserChatSenderKeys(chat.getId(), userId);
+
+                chat.setInCall(callService.isChatInCall(chat.getId()));
 
                 chat.setParticipants(participants);
                 if (chat.getChatType() == ChatType.PRIVATE) {

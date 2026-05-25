@@ -7,6 +7,7 @@ import org.yomirein.sochatserver.sessions.SessionManager;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @RequiredArgsConstructor
 public class CallService {
@@ -15,7 +16,7 @@ public class CallService {
     Map<Long, P2PRoom> callRooms = new HashMap<Long, P2PRoom>();
 
     public void offer(long chatId, Session session, String offerSdp) {
-        P2PRoom p2pRoom = new P2PRoom(session);
+        P2PRoom p2pRoom = new P2PRoom(chatId, session);
         p2pRoom.setOfferSdp(offerSdp);
 
         callRooms.put(chatId, p2pRoom);
@@ -26,16 +27,16 @@ public class CallService {
         p2pRoom.setSession2(session);
     }
 
-    public void deleteRoom(long chatId) {
-        callRooms.remove(chatId);
-    }
+    public void deleteRoom(long chatId) { callRooms.remove(chatId); }
 
-    public P2PRoom findRoomBySession(Session session) {
+    public Optional<P2PRoom> findRoomBySession(Session session) {
         for (P2PRoom room : callRooms.values()) {
             if (room.getSession1() == session || room.getSession2() == session) {
-                return room;
+                return Optional.of(room);
             }
         }
-        return null;
+        return Optional.empty();
     }
+
+    public boolean isChatInCall(long chatId) { return callRooms.containsKey(chatId); }
 }

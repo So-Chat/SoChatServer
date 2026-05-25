@@ -1,6 +1,7 @@
 package org.yomirein.sochatserver.chats;
 
 import org.yomirein.sochatserver.Database;
+import org.yomirein.sochatserver.calls.CallService;
 import org.yomirein.sochatserver.users.UserRepository;
 import org.yomirein.sochatserver.users.User;
 import org.yomirein.sochatserver.utils.KeyParser;

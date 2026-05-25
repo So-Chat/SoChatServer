@@ -8,12 +8,18 @@ import io.netty.handler.timeout.IdleStateEvent;
 
 import io.netty.handler.codec.http.websocketx.PongWebSocketFrame;
 import lombok.RequiredArgsConstructor;
+import org.yomirein.sochatserver.calls.CallService;
+import org.yomirein.sochatserver.calls.p2p.P2PRoom;
+import org.yomirein.sochatserver.sessions.Session;
 import org.yomirein.sochatserver.sessions.SessionManager;
+
+import java.util.Optional;
 
 @RequiredArgsConstructor
 public class HeartbeatHandler extends ChannelInboundHandlerAdapter {
 
     private final SessionManager sessionManager;
+    private final CallService callService;
 
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
@@ -32,6 +38,17 @@ public class HeartbeatHandler extends ChannelInboundHandlerAdapter {
         } else {
             super.userEventTriggered(ctx, evt);
         }
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        Session currentSession = sessionManager.getSession(ctx.channel());
+
+        Optional<P2PRoom> roomOpt = callService.findRoomBySession(currentSession);
+        roomOpt.ifPresent(p2PRoom -> callService.deleteRoom(p2PRoom.getChatId()));
+
+        sessionManager.removeSession(ctx.channel());
+        super.channelInactive(ctx);
     }
 
     @Override

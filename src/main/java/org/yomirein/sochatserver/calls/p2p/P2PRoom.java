@@ -6,24 +6,20 @@ import org.yomirein.sochatserver.sessions.Session;
 
 import java.util.ArrayList;
 import java.util.List;
-
+@Getter @Setter
 public class P2PRoom {
-    @Getter @Setter
-    private Session session1;
+    private long chatId;
 
-    @Getter @Setter
+    private Session session1;
     private Session session2;
 
-    @Getter @Setter
     private String offerSdp;
 
-    @Getter @Setter
     private List<IceCandidatePayload> callerIce = new ArrayList<>();
-
-    @Getter @Setter
     private List<IceCandidatePayload> calleeIce = new ArrayList<>();
 
-    public P2PRoom(Session session1) {
+    public P2PRoom(long chatId, Session session1) {
+        this.chatId = chatId;
         this.session1 = session1;
     }
 

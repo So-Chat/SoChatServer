@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yomirein.sochatserver.auth.AuthHandler;
 import org.yomirein.sochatserver.calls.CallHandler;
+import org.yomirein.sochatserver.calls.CallService;
 import org.yomirein.sochatserver.chats.ChatHandler;
 import org.yomirein.sochatserver.friendship.FriendsHandler;
 import org.yomirein.sochatserver.media.MediaHandler;
@@ -41,7 +42,7 @@ public class HttpServer {
     private final int port;
 
     private final AuthService authService;
-    private final MediaHandler mediaHandler;
+    private final CallService callService;
 
     private final SessionManager sessionManager;
 
@@ -50,6 +51,7 @@ public class HttpServer {
     private final UsersHandler usersHandler;
     private final ChatHandler chatHandler;
     private final MessageHandler messageHandler;
+    private final MediaHandler mediaHandler;
     private final CallHandler callHandler;
 
     // Adding logger
@@ -74,7 +76,7 @@ public class HttpServer {
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup)
                     .channel(NioServerSocketChannel.class)
-                    .handler(new LoggingHandler(LogLevel.INFO))
+                    .handler(new LoggingHandler(LogLevel.TRACE))
                     .childHandler(new ChannelInitializer() {
                         @Override
                         protected void initChannel(Channel channel) throws Exception {
@@ -89,7 +91,7 @@ public class HttpServer {
 
                             // Heartbeat for low-level ping pongs
                             p.addLast(new IdleStateHandler(0, 20, 0));
-                            p.addLast(new HeartbeatHandler(sessionManager));
+                            p.addLast(new HeartbeatHandler(sessionManager, callService));
 
                             // Cors
                             p.addLast(new CorsHandler(corsConfig));

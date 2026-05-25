@@ -1,5 +1,10 @@
 package org.yomirein.sochatserver;
 
+import io.netty.util.internal.logging.InternalLoggerFactory;
+import io.netty.util.internal.logging.Slf4JLoggerFactory;
+import lombok.extern.slf4j.XSlf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.yomirein.sochatserver.auth.AuthHandler;
 import org.yomirein.sochatserver.calls.CallHandler;
 import org.yomirein.sochatserver.calls.CallService;
@@ -34,6 +39,12 @@ public class SoChat {
         // And running server, it works on HTTP and WebSocket(Class named HttpServer, because WebSocket works on HTTP anyway)
 
 
+        Logger LOGGER = LoggerFactory.getLogger(this.getClass());
+
+        LOGGER.info("Starting SoChat server...");
+
+        InternalLoggerFactory.setDefaultFactory(Slf4JLoggerFactory.INSTANCE);
+
         // Managers
         ChallengeManager challengeManager = new ChallengeManager();
         SessionManager sessionManager = new SessionManager();
@@ -59,14 +70,14 @@ public class SoChat {
         AuthHandler authHandler = new AuthHandler(userRepository,sessionManager);
         FriendsHandler friendsHandler = new FriendsHandler(sessionManager, userRepository, friendshipRepository, friendshipService, userService);
         UsersHandler userHandler = new UsersHandler(sessionManager, userRepository, trustKeysRepository, userService);
-        ChatHandler chatHandler = new ChatHandler(chatService, userService, messageService, sessionManager);
+        ChatHandler chatHandler = new ChatHandler(chatService, userService, messageService, callService, sessionManager);
         MessageHandler messageHandler = new MessageHandler(messageService, chatService, userService, mediaService, sessionManager);
         MediaHandler mediaHandler = new MediaHandler(mediaService);
         CallHandler callHandler = new CallHandler(callService, friendshipService, userService, chatService, sessionManager);
 
         // Server initialization
-        HttpServer httpServer = new HttpServer(8081, authService, mediaHandler, sessionManager, authHandler, friendsHandler,
-                userHandler, chatHandler, messageHandler, callHandler);
+        HttpServer httpServer = new HttpServer(8081, authService, callService, sessionManager, authHandler, friendsHandler,
+                userHandler, chatHandler, messageHandler, mediaHandler, callHandler);
 
         // Run everything
         httpServer.run();
