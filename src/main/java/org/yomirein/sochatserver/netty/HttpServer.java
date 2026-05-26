@@ -91,7 +91,7 @@ public class HttpServer {
 
                             // Heartbeat for low-level ping pongs
                             p.addLast(new IdleStateHandler(0, 20, 0));
-                            p.addLast(new HeartbeatHandler(sessionManager, callService));
+                            p.addLast(new HeartbeatHandler(sessionManager));
 
                             // Cors
                             p.addLast(new CorsHandler(corsConfig));
@@ -102,7 +102,7 @@ public class HttpServer {
                             // WsPacketHandler init, with decoders and encoders
                             p.addLast(new PacketDecoder());
                             p.addLast(new WsPacketHandler(sessionManager, authHandler,
-                                    friendsHandler, usersHandler, chatHandler, messageHandler, callHandler));
+                                    friendsHandler, usersHandler, chatHandler, messageHandler, callHandler, callService));
                             p.addLast(new PacketEncoder());
                         }
                     });

@@ -16,7 +16,7 @@ public class CallService {
     Map<Long, P2PRoom> callRooms = new HashMap<Long, P2PRoom>();
 
     public void offer(long chatId, Session session, String offerSdp) {
-        P2PRoom p2pRoom = new P2PRoom(chatId, session);
+        P2PRoom p2pRoom = new P2PRoom(session);
         p2pRoom.setOfferSdp(offerSdp);
 
         callRooms.put(chatId, p2pRoom);
@@ -28,6 +28,7 @@ public class CallService {
     }
 
     public void deleteRoom(long chatId) { callRooms.remove(chatId); }
+    public void deleteRoom(P2PRoom p2pRoom) { callRooms.entrySet().removeIf(entry -> entry.getValue().equals(p2pRoom)); }
 
     public Optional<P2PRoom> findRoomBySession(Session session) {
         for (P2PRoom room : callRooms.values()) {

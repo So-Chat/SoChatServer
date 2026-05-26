@@ -6,6 +6,7 @@ import org.yomirein.sochatserver.calls.p2p.IceCandidatePayload;
 import org.yomirein.sochatserver.calls.p2p.P2PRoom;
 import org.yomirein.sochatserver.chats.Chat;
 import org.yomirein.sochatserver.chats.ChatService;
+import org.yomirein.sochatserver.chats.ChatType;
 import org.yomirein.sochatserver.common.models.MessagePacket;
 import org.yomirein.sochatserver.friendship.FriendshipService;
 import org.yomirein.sochatserver.sessions.Session;
@@ -48,21 +49,29 @@ public class CallHandler {
 
     public void call(ChannelHandlerContext channelHandlerContext, MessagePacket messagePacket, Long userId) {
         try {
-            Long toId = messagePacket.getPayload().get("callee_id").asLong();
+            long chatId = messagePacket.getPayload().get("chat_id").asLong();
+            long toId = messagePacket.getPayload().get("user_id").asLong();
+
             User toUser = userService.getUser(toId);
+            Chat chat = chatService.getChat(chatId);
+
+            if (chat.getChatType() != ChatType.PRIVATE) {
+                MessagePacket messagePacket1 = MessageSender.buildBaseResponse(messagePacket, "You call in non private chat!").build();
+                channelHandlerContext.channel().writeAndFlush(messagePacket1);
+                return;
+            }
 
             if (!friendshipService.isFriends(userId, toUser.getId())) {
                 MessagePacket messagePacket1 = MessageSender.buildBaseResponse(messagePacket, "You can't call people if they are not in your Friend list!").build();
                 channelHandlerContext.channel().writeAndFlush(messagePacket1);
+                return;
             }
 
             Set<Session> userSessions = sessionManager.getUserSessions(toUser);
             if (userSessions.isEmpty()) {
                 MessagePacket messagePacket1 = MessageSender.buildBaseResponse(messagePacket, "User is offline").build();
                 channelHandlerContext.channel().writeAndFlush(messagePacket1);
-            }String offer = messagePacket.getPayload().get("sdp").asText();
-
-            Chat chat = chatService.getChatByUsers(userId, toUser.getId());
+            } String offer = messagePacket.getPayload().get("sdp").asText();
 
             callService.offer(chat.getId(), sessionManager.getSession(channelHandlerContext.channel()), offer);
 
@@ -77,10 +86,9 @@ public class CallHandler {
 
     public void acceptCall(ChannelHandlerContext channelHandlerContext, MessagePacket messagePacket, Long userId) {
         try {
-            Long toId = messagePacket.getPayload().get("call_id").asLong();
-            User toUser = userService.getUser(toId);
+            long chatId = messagePacket.getPayload().get("chat_id").asLong();
 
-            Chat chat = chatService.getChatByUsers(userId, toUser.getId());
+            Chat chat = chatService.getChat(chatId);
 
             P2PRoom p2pRoom = callService.callRooms.get(chat.getId());
 
@@ -176,9 +184,7 @@ public class CallHandler {
             Chat chat = chatService.getChatByUsers(p2pRoom.getOther(userSession).getUser().getId(), userSession.getUser().getId());
             callService.deleteRoom(chat.getId());
 
-            MessagePacket endCallPacket = new MessagePacket.Builder()
-                    .type("call_end")
-                    .put("server_message", "Call end")
+            MessagePacket endCallPacket = MessageSender.buildBaseResponse(messagePacket, "Call end")
                     .put("chat_id", chat.getId()).build();
 
             userSession.getChannel().writeAndFlush(endCallPacket);

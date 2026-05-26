@@ -6,6 +6,8 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import lombok.RequiredArgsConstructor;
 import org.yomirein.sochatserver.auth.AuthHandler;
 import org.yomirein.sochatserver.calls.CallHandler;
+import org.yomirein.sochatserver.calls.CallService;
+import org.yomirein.sochatserver.calls.p2p.P2PRoom;
 import org.yomirein.sochatserver.chats.ChatHandler;
 import org.yomirein.sochatserver.messages.MessageHandler;
 import org.yomirein.sochatserver.sessions.SessionManager;
@@ -14,6 +16,8 @@ import org.yomirein.sochatserver.sessions.Session;
 import org.yomirein.sochatserver.friendship.FriendsHandler;
 import org.yomirein.sochatserver.users.UsersHandler;
 import org.yomirein.sochatserver.utils.JwtService;
+
+import java.util.Optional;
 
 import static org.yomirein.sochatserver.utils.MessageSender.sendError;
 
@@ -29,6 +33,8 @@ public class WsPacketHandler extends SimpleChannelInboundHandler<MessagePacket> 
     private final ChatHandler chatHandler;
     private final MessageHandler messageHandler;
     private final CallHandler callHandler;
+
+    private final CallService callService;
 
     // Handling every packet, they separated by their appointment
     @Override
@@ -123,5 +129,16 @@ public class WsPacketHandler extends SimpleChannelInboundHandler<MessagePacket> 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         cause.printStackTrace();
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        Session currentSession = sessionManager.getSession(ctx.channel());
+
+        Optional<P2PRoom> roomOpt = callService.findRoomBySession(currentSession);
+        roomOpt.ifPresent(callService::deleteRoom);
+
+        sessionManager.removeSession(ctx.channel());
+        super.channelInactive(ctx);
     }
 }
