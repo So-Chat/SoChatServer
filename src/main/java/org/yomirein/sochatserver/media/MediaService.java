@@ -35,7 +35,6 @@ public class MediaService {
         }
 
         String mediaId = Paths.get(uri).getFileName().toString();
-        System.out.println(mediaId);
         Media media = mediaRepository.findById(mediaId).orElseThrow(() -> new MediaException(HttpResponseStatus.NOT_FOUND, "Not found"));
 
         String dir1 = media.getMediaId().substring(0, 2);

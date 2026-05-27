@@ -16,6 +16,7 @@ import java.io.RandomAccessFile;
 import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.*;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
@@ -107,7 +108,11 @@ public class MediaHandler {
 
     public void deleteMedia(ChannelHandlerContext ctx, FullHttpRequest fullHttpRequest) {
         try {
-            mediaService.deleteMedia(fullHttpRequest.uri());
+            QueryStringDecoder decoder = new QueryStringDecoder(fullHttpRequest.uri());
+            Map<String, List<String>> parameters = decoder.parameters();
+
+            mediaService.deleteMedia(parameters.get("id").getFirst());
+            sendHttp(ctx, OK, "Deleted successfully");
         } catch (MediaException e) {
             sendHttp(ctx, e.getStatus(), e.getMessage());
         }
