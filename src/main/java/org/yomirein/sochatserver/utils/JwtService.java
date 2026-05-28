@@ -16,7 +16,7 @@ public class JwtService {
     // Actually really simple JWT Service
     // It's so simple I just copypasted from previous try then I made sochat in Spring
 
-    private static final String SECRET;
+    public static final String SECRET;
     private static final Key SIGNING_KEY;
 
     // Different security key so every reload every session become invalid

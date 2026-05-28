@@ -2,32 +2,55 @@ package org.yomirein.sochatserver;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.yomirein.sochatserver.utils.ConfigReader;
+import org.yomirein.sochatserver.utils.JwtService;
 
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.*;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 
 public class Main {
+    private static Process turnProcess;
+
+    public static String osName = System.getProperty("os.name");
+    public static String osVersion = System.getProperty("os.version");
+    public static String osArch = System.getProperty("os.arch");
+
+    private static final Logger logger = LoggerFactory.getLogger(Main.class);
+
     public static void main(String[] args) {
         //
         // TODO: Check compliance with the tables
         //
 
-        // This method does everything
+        logger.info("Running on OS: " + osName + " " + osVersion + " " + osArch);
+
+        // This method does everything with databases
         databaseCheck();
 
         try {
-            SoChat server = new SoChat();
-            server.run();
+            SoChat soChat = new SoChat();
+            SoTurn soTurn = new SoTurn();
+
+            soTurn.run();
+            soChat.run();
         } catch (Exception e){
             e.printStackTrace();
         }
-
     }
 
     // Checking for existing 'sochat' database
@@ -46,7 +69,7 @@ public class Main {
         // If config has url trying to connect to server
         // TODO: Make connection tries
         if (propertiesMap.containsKey("db.url")) {
-            System.out.println("Config already contains Database info, skipping setup...");
+            logger.info("Config already contains Database info, skipping setup...");
             return;
         }
 
@@ -64,7 +87,7 @@ public class Main {
 
         }
         catch (Exception e) {
-            System.out.println("Exit with error: " + e);
+            logger.info("Exit with error: " + e);
         }
     }
 
@@ -123,18 +146,18 @@ public class Main {
             ResultSet rs = ps.executeQuery();
 
             if (rs.next()) {
-                System.out.println("Database exists, using database with default name\n(if you don't want this database change in config.properties or delete to start setup)");
+                logger.info("Database exists, using database with default name\n(if you don't want this database change in config.properties or delete to start setup)");
                 return "sochat";
             }
 
             // Create db in not
-            System.out.println("Database not found.");
+            logger.info("Database not found.");
 
             BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
-            System.out.println("1 - use existing, 2 - create new (default 2)");
+            logger.info("1 - use existing, 2 - create new (default 2)");
             int option = Integer.parseInt(readLine(in, "2"));
 
-            System.out.println("Database name (sochat): ");
+            logger.info("Database name (sochat): ");
             String dbName = readLine(in, "sochat");
 
             if (option == 2) {
@@ -145,7 +168,7 @@ public class Main {
                 }
                 catch (Exception e)
                 {
-                    System.out.println("Exit with error:"+ e);
+                    logger.info("Exit with error:"+ e);
                 }
             }
 
@@ -161,7 +184,7 @@ public class Main {
             st.executeUpdate("CREATE DATABASE  " + name);
 
             properties.setProperty("db.name", name);
-            System.out.println("Created database successfully");
+            logger.info("Created database successfully");
 
         }
         catch (Exception e){
