@@ -8,12 +8,9 @@ Eng: __SoChat enables users to create and manage their own messaging server for 
 
 Rus: __SoChat позволяет пользователям создавать и управлять собственным сервером для обмена текстовыми и голосовыми сообщениями, предоставляя им полный контроль над настройкой и безопасностью!__
 
-[**Made for SoChat Client / Сделано для SoChat Client**](https://github.com/yomirein/sochat_client)
+[**Made for SoChat Client / Сделано для SoChat Client**](https://github.com/So-Chat/sochat_client)
 
 ## IT STILL WORK IN PROGRESS / ПОКА В РАЗРАБОТКЕ
-What was done / Что было сделано:
-[MOVED TO PROJECT PAGE](https://github.com/users/yomirein/projects/2/views/1) 
-
 
 ## Libraries used in project / Библиотеки использованные в проекте
 
@@ -33,5 +30,5 @@ Eng: I'm currently working on it as a college project, and it will continue if p
 Rus: Сейчас я это делаю как проект для колледжа, но я продолжу его разрабатывать если люди покажут интерес после первого рабочего релиза
 
 ## License - Лицензия
-- **This project is licensed under the [GPL v3.0 License](https://github.com/yomirein/SoChatServer/blob/master/LICENSE)** 
-- **Этот проект находится распространяется под [лицензией GPL v3.0](https://github.com/yomirein/SoChatServer/blob/master/LICENSE)**
+- **This project is licensed under the [GPL v3.0 License](https://github.com/So-Chat/SoChatServer/blob/master/LICENSE)** 
+- **Этот проект находится распространяется под [лицензией GPL v3.0](https://github.com/So-Chat/SoChatServer/blob/master/LICENSE)**
