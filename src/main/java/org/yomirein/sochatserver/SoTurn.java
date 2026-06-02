@@ -72,6 +72,7 @@ public class SoTurn {
         Thread turnThread = new Thread(() -> {
             ProcessBuilder pb = new ProcessBuilder(
                     Paths.get(executableName).toAbsolutePath().toString(),
+                    // TODO: MOVE TO THE CONFIG
                     "--public-ip", "0.0.0.0",
                     "--realm", "0.0.0.0",
                     "--jwt", JwtService.SECRET

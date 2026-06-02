@@ -84,12 +84,16 @@ public class WsPacketHandler extends SimpleChannelInboundHandler<MessagePacket> 
 
 
             // CALLS MANAGEMENT
+            case "turn_credentials_get": withAuth(channelHandlerContext, messagePacket, callHandler::turnCredentials); break;
+
             case "call_offer": withAuth(channelHandlerContext, messagePacket, callHandler::call); break;
             case "call_accept": withAuth(channelHandlerContext, messagePacket, callHandler::acceptCall); break;
 
             case "call_answer": withAuth(channelHandlerContext, messagePacket, callHandler::answerRtc); break;
             case "call_ice": withAuth(channelHandlerContext, messagePacket, callHandler::iceRtc); break;
             case "call_end": withAuth(channelHandlerContext, messagePacket, callHandler::endCall); break;
+
+
         }
     }
 
@@ -133,6 +137,7 @@ public class WsPacketHandler extends SimpleChannelInboundHandler<MessagePacket> 
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        System.out.println("INACTIVE " + ctx.channel().id());
         Session currentSession = sessionManager.getSession(ctx.channel());
 
         Optional<P2PRoom> roomOpt = callService.findRoomBySession(currentSession);
@@ -140,5 +145,11 @@ public class WsPacketHandler extends SimpleChannelInboundHandler<MessagePacket> 
 
         sessionManager.removeSession(ctx.channel());
         super.channelInactive(ctx);
+    }
+
+    // TODO: Remove when figure out with sessions
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) {
+        System.out.println("ACTIVE " + ctx.channel().id());
     }
 }

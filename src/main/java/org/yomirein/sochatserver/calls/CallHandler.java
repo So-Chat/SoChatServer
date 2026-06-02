@@ -13,6 +13,7 @@ import org.yomirein.sochatserver.sessions.Session;
 import org.yomirein.sochatserver.sessions.SessionManager;
 import org.yomirein.sochatserver.users.User;
 import org.yomirein.sochatserver.users.UserService;
+import org.yomirein.sochatserver.utils.JwtService;
 import org.yomirein.sochatserver.utils.MessageSender;
 
 import java.util.Optional;
@@ -46,6 +47,29 @@ public class CallHandler {
 
     private final SessionManager sessionManager;
 
+    // Getting turn credentials for calls
+    public void turnCredentials(ChannelHandlerContext channelHandlerContext, MessagePacket messagePacket, Long userId) {
+        try {
+            // If user already in call prevent to give any turn credential
+            // THIS MISCONCEPTION WON'T WORK, TODO: NEED TO COMPLETELY REWORK SESSIONS
+            /*
+            if (callService.findRoomBySession(sessionManager.getSession(channelHandlerContext.channel())).isPresent()) {
+                MessagePacket messagePacket1 = MessageSender.buildBaseResponse(messagePacket, "Can't get turn credentials because user already have one").build();
+                channelHandlerContext.channel().writeAndFlush(messagePacket1);
+                return;
+            }*/
+
+            TurnCredential turnCredential = JwtService.generateTurnCredential(userId);
+            MessagePacket answerPacket = MessageSender.buildBaseResponse(messagePacket, "Got turn credentials successfully")
+                    .put("username", turnCredential.username)
+                    .put("credential", turnCredential.credential)
+                    .build();
+            channelHandlerContext.channel().writeAndFlush(answerPacket);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 
     public void call(ChannelHandlerContext channelHandlerContext, MessagePacket messagePacket, Long userId) {
         try {
@@ -78,6 +102,9 @@ public class CallHandler {
             MessagePacket messagePacket1 = MessageSender.buildBaseResponse(
                     messagePacket, "Someone calling you").put("chat_id", chat.getId()).build();
             MessageSender.notifyUser(userSessions, messagePacket1);
+
+            System.out.println("Room " + chat.getId() + " created");
+
         } catch (Exception e) {
             sendError(channelHandlerContext, messagePacket, e.getMessage());
             throw new RuntimeException(e);
@@ -87,6 +114,8 @@ public class CallHandler {
     public void acceptCall(ChannelHandlerContext channelHandlerContext, MessagePacket messagePacket, Long userId) {
         try {
             long chatId = messagePacket.getPayload().get("chat_id").asLong();
+
+            System.out.println("Joining " + chatId);
 
             Chat chat = chatService.getChat(chatId);
 

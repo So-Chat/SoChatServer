@@ -6,8 +6,14 @@ import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import org.yomirein.sochatserver.calls.TurnCredential;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.security.InvalidKeyException;
 import java.security.Key;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.function.Function;
 
@@ -41,7 +47,7 @@ public class JwtService {
     // Main JWT Generation
     public static String generateToken(String subject, Date expirationDate, JwtType type, Map<String, Object> values) {
         Date now = new Date();
-        values.put("type", type.toString());
+        if (type != null) values.put("type", type.toString());
         return Jwts.builder()
                 .setClaims(values)
                 .setSubject(subject)
@@ -79,5 +85,22 @@ public class JwtService {
         } catch (JwtException | IllegalArgumentException ex) {
             return false;
         }
+    }
+
+    public static TurnCredential generateTurnCredential(long userId) throws NoSuchAlgorithmException, InvalidKeyException {
+        long currentTime = System.currentTimeMillis() / 1000;
+        long expireTime = currentTime + 3600;
+
+        String turnUsername = expireTime + ":" + userId;
+
+        SecretKeySpec signingKey = new SecretKeySpec(SECRET.getBytes(StandardCharsets.UTF_8), "HmacSHA1");
+        Mac mac = Mac.getInstance("HmacSHA1");
+        mac.init(signingKey);
+
+        byte[] rawMac = mac.doFinal(turnUsername.getBytes(StandardCharsets.UTF_8));
+
+        String turnCredential = Base64.getEncoder().encodeToString(rawMac);
+
+        return new TurnCredential(turnUsername, turnCredential);
     }
 }
