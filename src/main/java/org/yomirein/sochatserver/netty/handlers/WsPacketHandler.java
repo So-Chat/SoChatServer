@@ -140,10 +140,13 @@ public class WsPacketHandler extends SimpleChannelInboundHandler<MessagePacket> 
         System.out.println("INACTIVE " + ctx.channel().id());
         Session currentSession = sessionManager.getSession(ctx.channel());
 
-        Optional<P2PRoom> roomOpt = callService.findRoomBySession(currentSession);
-        roomOpt.ifPresent(callService::deleteRoom);
+        if (currentSession != null) {
+            Optional<P2PRoom> roomOpt = callService.findRoomBySession(currentSession);
+            roomOpt.ifPresent(callService::deleteRoom);
 
-        sessionManager.removeSession(ctx.channel());
+            sessionManager.removeSession(ctx.channel());
+        }
+
         super.channelInactive(ctx);
     }
 

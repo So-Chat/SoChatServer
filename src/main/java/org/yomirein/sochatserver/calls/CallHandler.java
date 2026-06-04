@@ -214,7 +214,7 @@ public class CallHandler {
             callService.deleteRoom(chat.getId());
 
             MessagePacket endCallPacket = MessageSender.buildBaseResponse(messagePacket, "Call end")
-                    .put("chat_id", chat.getId()).build();
+                    .put("chat_id", chat.getId()).put("success", true).build();
 
             userSession.getChannel().writeAndFlush(endCallPacket);
             p2pRoom.getOther(userSession).getChannel().writeAndFlush(endCallPacket);

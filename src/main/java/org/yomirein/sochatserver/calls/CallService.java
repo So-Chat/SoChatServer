@@ -27,15 +27,23 @@ public class CallService {
         p2pRoom.setSession2(session);
     }
 
-    public void deleteRoom(long chatId) { callRooms.remove(chatId); }
-    public void deleteRoom(P2PRoom p2pRoom) { callRooms.entrySet().removeIf(entry -> entry.getValue().equals(p2pRoom)); }
+    public void deleteRoom(long chatId) {
+        callRooms.remove(chatId); }
+    public void deleteRoom(P2PRoom p2pRoom) {
+        callRooms.entrySet().removeIf(entry -> entry.getValue().equals(p2pRoom)); }
 
-    public Optional<P2PRoom> findRoomBySession(Session session) {
+    public Optional<P2PRoom> findRoomBySession(Session session) throws Exception {
+        if (session == null) {
+            throw new Exception("Session is null");
+        }
+
         for (P2PRoom room : callRooms.values()) {
-            if (room.getSession1() == session || room.getSession2() == session) {
+            if (room.getSession1() == session ||
+                    room.getSession2() == session) {
                 return Optional.of(room);
             }
         }
+
         return Optional.empty();
     }
 
