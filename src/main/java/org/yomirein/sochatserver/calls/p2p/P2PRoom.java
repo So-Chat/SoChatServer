@@ -10,6 +10,8 @@ import java.util.List;
 public class P2PRoom {
     //private long chatId;
 
+    private long chatId;
+
     private Session session1;
     private Session session2;
 
@@ -18,8 +20,8 @@ public class P2PRoom {
     private List<IceCandidatePayload> callerIce = new ArrayList<>();
     private List<IceCandidatePayload> calleeIce = new ArrayList<>();
 
-    public P2PRoom(/*long chatId, */Session session1) {
-        //this.chatId = chatId;
+    public P2PRoom(long chatId, Session session1) {
+        this.chatId = chatId;
         this.session1 = session1;
     }
 

@@ -210,7 +210,7 @@ public class CallHandler {
                     () -> new IllegalStateException("Session is not in any call!")
             );
 
-            Chat chat = chatService.getChatByUsers(p2pRoom.getOther(userSession).getUser().getId(), userSession.getUser().getId());
+            Chat chat = chatService.getChat(p2pRoom.getChatId());
             callService.deleteRoom(chat.getId());
 
             MessagePacket endCallPacket = MessageSender.buildBaseResponse(messagePacket, "Call end")

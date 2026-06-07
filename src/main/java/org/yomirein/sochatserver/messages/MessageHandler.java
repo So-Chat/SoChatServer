@@ -274,10 +274,15 @@ public class MessageHandler {
             chat.setParticipants(chatService.getParticipantList(message.getChatId()));
 
             // Check if user can delete message
-            // Only message sender itself or user with privilegesаут in chat can do this
-            if (message.getSenderId() != userId ||
-                    chat.getParticipants().stream().anyMatch(p -> p.getUserId() == userId && !(p.getChatRole() == ChatRole.ADMIN || p.getChatRole() == ChatRole.OWNER))) {
-                sendError(channelHandlerContext, messagePacket, "You can't delete others user message!");
+            // Only message sender itself or user with privileges in chat can do this
+            boolean isOwnerMessage = message.getSenderId() == (userId);
+
+            boolean isAdminOrOwner = chat.getParticipants().stream()
+                    .filter(p -> p.getUserId() == (userId))
+                    .anyMatch(p -> p.getChatRole() == ChatRole.ADMIN || p.getChatRole() == ChatRole.OWNER);
+
+            if (!isOwnerMessage && !isAdminOrOwner) {
+                sendError(channelHandlerContext, messagePacket, "You can't delete other users' messages!");
                 return;
             }
 
