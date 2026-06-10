@@ -4,12 +4,15 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.yomirein.sochatserver.auth.AuthHandler;
 import org.yomirein.sochatserver.calls.CallHandler;
 import org.yomirein.sochatserver.calls.CallService;
 import org.yomirein.sochatserver.calls.p2p.P2PRoom;
 import org.yomirein.sochatserver.chats.ChatHandler;
 import org.yomirein.sochatserver.messages.MessageHandler;
+import org.yomirein.sochatserver.search.SearchHandler;
 import org.yomirein.sochatserver.sessions.SessionManager;
 import org.yomirein.sochatserver.common.models.MessagePacket;
 import org.yomirein.sochatserver.sessions.Session;
@@ -25,6 +28,8 @@ import static org.yomirein.sochatserver.utils.MessageSender.sendError;
 @RequiredArgsConstructor
 public class WsPacketHandler extends SimpleChannelInboundHandler<MessagePacket> {
 
+    Logger LOGGER = LoggerFactory.getLogger(this.getClass());
+
     private final SessionManager sessionManager;
 
     private final AuthHandler authHandler;
@@ -33,6 +38,7 @@ public class WsPacketHandler extends SimpleChannelInboundHandler<MessagePacket> 
     private final ChatHandler chatHandler;
     private final MessageHandler messageHandler;
     private final CallHandler callHandler;
+    private final SearchHandler searchHandler;
 
     private final CallService callService;
 
@@ -94,6 +100,9 @@ public class WsPacketHandler extends SimpleChannelInboundHandler<MessagePacket> 
             case "call_end": withAuth(channelHandlerContext, messagePacket, callHandler::endCall); break;
 
 
+            // SEARCH
+            case "search_user": withAuth(channelHandlerContext, messagePacket, searchHandler::searchUsers); break;
+
         }
     }
 
@@ -137,7 +146,7 @@ public class WsPacketHandler extends SimpleChannelInboundHandler<MessagePacket> 
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        System.out.println("INACTIVE " + ctx.channel().id());
+        LOGGER.trace("INACTIVE CTX {}", ctx.channel().id());
         Session currentSession = sessionManager.getSession(ctx.channel());
 
         if (currentSession != null) {
@@ -150,9 +159,8 @@ public class WsPacketHandler extends SimpleChannelInboundHandler<MessagePacket> 
         super.channelInactive(ctx);
     }
 
-    // TODO: Remove when figure out with sessions
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
-        System.out.println("ACTIVE " + ctx.channel().id());
+        LOGGER.trace("ACTIVE CTX {}", ctx.channel().id());
     }
 }

@@ -55,4 +55,7 @@ public class SessionManager {
     public Set<Session> getUserSessions(User user) {
         return sessionsByUser.getOrDefault(user.getId(), Set.of());
     }
+    public Set<Session> getUserSessions(long id) {
+        return sessionsByUser.getOrDefault(id, Set.of());
+    }
 }

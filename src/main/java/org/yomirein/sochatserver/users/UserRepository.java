@@ -1,13 +1,16 @@
 package org.yomirein.sochatserver.users;
 
 import org.yomirein.sochatserver.Database;
+import org.yomirein.sochatserver.messages.Message;
 import org.yomirein.sochatserver.utils.KeyParser;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.List;
 import java.util.Optional;
 
 import static org.yomirein.sochatserver.utils.JsonConfig.mapUser;
@@ -67,6 +70,25 @@ public class UserRepository {
         }
     }
 
+    public List<User> searchByUsername(String username, int offset, int limit) {
+        String sql = "SELECT " + USER_FIELDS + " FROM users WHERE username ILIKE '?%' ORDER BY id DESC OFFSET ? LIMIT ?";
+        List<User> out = new ArrayList<>();
+        try (Connection c = Database.getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, username);
+            ps.setLong(2, offset);
+            ps.setLong(3, limit);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) out.add(mapUser(rs));
+            }
+            return out;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
     public boolean updateUser(Long id, String username, String nickname, String description) {
         String sql = "UPDATE users SET username = COALESCE(?, username), nickname = ?, description = ? WHERE id = ?";
         try (Connection c = Database.getConnection();
@@ -88,5 +110,4 @@ public class UserRepository {
             return Optional.of(mapUser(rs));
         }
     }
-
 }

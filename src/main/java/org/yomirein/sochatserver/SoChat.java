@@ -18,6 +18,8 @@ import org.yomirein.sochatserver.media.MediaService;
 import org.yomirein.sochatserver.messages.MessageHandler;
 import org.yomirein.sochatserver.messages.MessageRepository;
 import org.yomirein.sochatserver.messages.MessageService;
+import org.yomirein.sochatserver.search.SearchHandler;
+import org.yomirein.sochatserver.search.SearchService;
 import org.yomirein.sochatserver.sessions.SessionManager;
 import org.yomirein.sochatserver.netty.HttpServer;
 import org.yomirein.sochatserver.chats.ChatRepository;
@@ -65,6 +67,7 @@ public class SoChat {
         MediaService mediaService = new MediaService(mediaRepository, chatService, userService);
         MessageService messageService = new MessageService(messageRepository, mediaService);
         CallService callService = new CallService(sessionManager);
+        SearchService searchService = new SearchService(userRepository);
 
         // Handlers initialization
         AuthHandler authHandler = new AuthHandler(userRepository,sessionManager);
@@ -74,10 +77,11 @@ public class SoChat {
         MessageHandler messageHandler = new MessageHandler(messageService, chatService, userService, mediaService, sessionManager);
         MediaHandler mediaHandler = new MediaHandler(mediaService);
         CallHandler callHandler = new CallHandler(callService, friendshipService, userService, chatService, sessionManager);
+        SearchHandler searchHandler = new SearchHandler(searchService);
 
         // Server initialization
         HttpServer httpServer = new HttpServer(8081, authService, callService, sessionManager, authHandler, friendsHandler,
-                userHandler, chatHandler, messageHandler, mediaHandler, callHandler);
+                userHandler, chatHandler, messageHandler, mediaHandler, callHandler, searchHandler);
 
         // Run everything
         httpServer.run();

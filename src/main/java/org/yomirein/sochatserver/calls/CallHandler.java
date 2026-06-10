@@ -7,6 +7,7 @@ import org.yomirein.sochatserver.calls.p2p.P2PRoom;
 import org.yomirein.sochatserver.chats.Chat;
 import org.yomirein.sochatserver.chats.ChatService;
 import org.yomirein.sochatserver.chats.ChatType;
+import org.yomirein.sochatserver.chats.Participant;
 import org.yomirein.sochatserver.common.models.MessagePacket;
 import org.yomirein.sochatserver.friendship.FriendshipService;
 import org.yomirein.sochatserver.sessions.Session;
@@ -16,9 +17,11 @@ import org.yomirein.sochatserver.users.UserService;
 import org.yomirein.sochatserver.utils.JwtService;
 import org.yomirein.sochatserver.utils.MessageSender;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import static org.yomirein.sochatserver.utils.MessageSender.notifyUser;
 import static org.yomirein.sochatserver.utils.MessageSender.sendError;
 
 /*
@@ -211,14 +214,16 @@ public class CallHandler {
             );
 
             Chat chat = chatService.getChat(p2pRoom.getChatId());
+            List<Participant> participants = chatService.getParticipantList(chat.getId());
             callService.deleteRoom(chat.getId());
 
             MessagePacket endCallPacket = MessageSender.buildBaseResponse(messagePacket, "Call end")
                     .put("chat_id", chat.getId()).put("success", true).build();
 
-            userSession.getChannel().writeAndFlush(endCallPacket);
-            p2pRoom.getOther(userSession).getChannel().writeAndFlush(endCallPacket);
-
+            for (Participant participant : participants) {
+                Set<Session> participantSessions = sessionManager.getUserSessions(participant.getUserId());
+                notifyUser(participantSessions, endCallPacket);
+            }
         } catch (Exception e) {
             sendError(channelHandlerContext, messagePacket, e.getMessage());
             throw new RuntimeException(e);

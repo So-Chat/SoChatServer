@@ -27,6 +27,7 @@ import org.yomirein.sochatserver.media.MediaHandler;
 import org.yomirein.sochatserver.media.MediaService;
 import org.yomirein.sochatserver.messages.MessageHandler;
 import org.yomirein.sochatserver.netty.handlers.HeartbeatHandler;
+import org.yomirein.sochatserver.search.SearchHandler;
 import org.yomirein.sochatserver.sessions.SessionManager;
 import org.yomirein.sochatserver.netty.codec.PacketDecoder;
 import org.yomirein.sochatserver.netty.codec.PacketEncoder;
@@ -53,6 +54,7 @@ public class HttpServer {
     private final MessageHandler messageHandler;
     private final MediaHandler mediaHandler;
     private final CallHandler callHandler;
+    private final SearchHandler searchHandler;
 
     // Adding logger
     private final Logger logger = LoggerFactory.getLogger(HttpServer.class);
@@ -102,7 +104,7 @@ public class HttpServer {
                             // WsPacketHandler init, with decoders and encoders
                             p.addLast(new PacketDecoder());
                             p.addLast(new WsPacketHandler(sessionManager, authHandler,
-                                    friendsHandler, usersHandler, chatHandler, messageHandler, callHandler, callService));
+                                    friendsHandler, usersHandler, chatHandler, messageHandler, callHandler, searchHandler, callService));
                             p.addLast(new PacketEncoder());
                         }
                     });
