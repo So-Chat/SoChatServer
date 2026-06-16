@@ -1,8 +1,6 @@
 package org.yomirein.sochatserver.users;
 
-import org.yomirein.sochatserver.Database;
-import org.yomirein.sochatserver.messages.Message;
-import org.yomirein.sochatserver.utils.KeyParser;
+import static org.yomirein.sochatserver.utils.JsonConfig.mapUser;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -12,24 +10,37 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
-
-import static org.yomirein.sochatserver.utils.JsonConfig.mapUser;
+import org.yomirein.sochatserver.Database;
+import org.yomirein.sochatserver.messages.Message;
+import org.yomirein.sochatserver.utils.KeyParser;
 
 // UserRepository.java, as like other repositories using for talking with database
 public class UserRepository {
 
     private static final String USER_FIELDS =
-            "id, nickname, username, description, ed25519_public_key, x25519_public_key";
+        "id, nickname, username, description, ed25519_public_key, x25519_public_key";
 
     public User saveUser(User user) {
-        String sql = "INSERT INTO users(nickname, username, ed25519_public_key, x25519_public_key) VALUES (?, ?, ?, ?) RETURNING id";
-        try (Connection dbConnection = Database.getConnection();
-             PreparedStatement ps = dbConnection.prepareStatement(sql)) {
-
+        String sql =
+            "INSERT INTO users(nickname, username, ed25519_public_key, x25519_public_key) VALUES (?, ?, ?, ?) RETURNING id";
+        try (
+            Connection dbConnection = Database.getConnection();
+            PreparedStatement ps = dbConnection.prepareStatement(sql)
+        ) {
             ps.setString(1, user.getNickname());
             ps.setString(2, user.getUsername());
-            ps.setString(3, Base64.getEncoder().encodeToString(user.getEd25519PublicKey().getEncoded()));
-            ps.setString(4, Base64.getEncoder().encodeToString(user.getX25519PublicKey().getEncoded()));
+            ps.setString(
+                3,
+                Base64.getEncoder().encodeToString(
+                    user.getEd25519PublicKey().getEncoded()
+                )
+            );
+            ps.setString(
+                4,
+                Base64.getEncoder().encodeToString(
+                    user.getX25519PublicKey().getEncoded()
+                )
+            );
 
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -37,7 +48,6 @@ public class UserRepository {
                     return user;
                 }
             }
-
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -46,39 +56,50 @@ public class UserRepository {
 
     public Optional<User> findByName(String username) {
         String sql = "SELECT " + USER_FIELDS + " FROM users WHERE username = ?";
-        try (Connection conn = Database.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
+        try (
+            Connection conn = Database.getConnection();
+            PreparedStatement ps = conn.prepareStatement(sql)
+        ) {
             ps.setString(1, username);
             return executeUserQuery(ps);
-
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
+
     public Optional<User> findById(Long id) {
         String sql = "SELECT " + USER_FIELDS + " FROM users WHERE id = ?";
 
-        try (Connection conn = Database.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
+        try (
+            Connection conn = Database.getConnection();
+            PreparedStatement ps = conn.prepareStatement(sql)
+        ) {
             ps.setLong(1, id);
             return executeUserQuery(ps);
-
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
     public List<User> searchByUsername(String username, int offset, int limit) {
-        String sql = "SELECT " + USER_FIELDS + " FROM users WHERE username ILIKE '?%' ORDER BY id DESC OFFSET ? LIMIT ?";
         List<User> out = new ArrayList<>();
-        try (Connection c = Database.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
-            ps.setString(1, username);
+
+        if (username.isEmpty() || username == null) {
+            return out;
+        }
+
+        String sql =
+            "SELECT " +
+            USER_FIELDS +
+            " FROM users WHERE username ILIKE ? ORDER BY id DESC OFFSET ? LIMIT ?";
+
+        try (
+            Connection c = Database.getConnection();
+            PreparedStatement ps = c.prepareStatement(sql)
+        ) {
+            ps.setString(1, username + "%");
             ps.setLong(2, offset);
             ps.setLong(3, limit);
-
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) out.add(mapUser(rs));
             }
@@ -88,11 +109,18 @@ public class UserRepository {
         }
     }
 
-
-    public boolean updateUser(Long id, String username, String nickname, String description) {
-        String sql = "UPDATE users SET username = COALESCE(?, username), nickname = ?, description = ? WHERE id = ?";
-        try (Connection c = Database.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
+    public boolean updateUser(
+        Long id,
+        String username,
+        String nickname,
+        String description
+    ) {
+        String sql =
+            "UPDATE users SET username = COALESCE(?, username), nickname = ?, description = ? WHERE id = ?";
+        try (
+            Connection c = Database.getConnection();
+            PreparedStatement ps = c.prepareStatement(sql)
+        ) {
             ps.setString(1, username);
             ps.setString(2, nickname);
             ps.setString(3, description);
@@ -104,7 +132,8 @@ public class UserRepository {
     }
 
     // For easier mapping
-    private Optional<User> executeUserQuery(PreparedStatement ps) throws SQLException {
+    private Optional<User> executeUserQuery(PreparedStatement ps)
+        throws SQLException {
         try (ResultSet rs = ps.executeQuery()) {
             if (!rs.next()) return Optional.empty();
             return Optional.of(mapUser(rs));
