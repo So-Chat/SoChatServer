@@ -75,7 +75,7 @@ public class SoChat {
         UsersHandler userHandler = new UsersHandler(sessionManager, userRepository, trustKeysRepository, userService);
         ChatHandler chatHandler = new ChatHandler(chatService, userService, messageService, callService, sessionManager);
         MessageHandler messageHandler = new MessageHandler(messageService, chatService, userService, mediaService, sessionManager);
-        MediaHandler mediaHandler = new MediaHandler(mediaService);
+        MediaHandler mediaHandler = new MediaHandler(mediaService, chatService);
         CallHandler callHandler = new CallHandler(callService, friendshipService, userService, chatService, sessionManager);
         SearchHandler searchHandler = new SearchHandler(searchService);
 

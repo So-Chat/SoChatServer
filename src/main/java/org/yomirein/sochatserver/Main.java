@@ -200,7 +200,7 @@ public class Main {
     public static void initTypes(HikariDataSource ds) {
         try (Connection con = ds.getConnection()) {
             Statement st = con.createStatement();
-            st.executeUpdate(""" 
+            st.executeUpdate("""
                 CREATE TYPE chat_role AS ENUM ('MEMBER', 'ADMIN','OWNER');
             """);
 
@@ -263,7 +263,7 @@ public class Main {
                     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
                     type chat_type NOT NULL,
                     title TEXT,
-            
+
                     CHECK (
                         (type = 'PRIVATE' AND title IS NULL) OR
                         (type IN ('GROUP_SECURE','GROUP_INSECURE', 'CHANNEL') AND title IS NOT NULL)

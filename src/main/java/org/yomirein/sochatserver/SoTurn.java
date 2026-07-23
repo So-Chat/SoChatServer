@@ -2,6 +2,7 @@ package org.yomirein.sochatserver;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.yomirein.sochatserver.utils.ConfigReader;
 import org.yomirein.sochatserver.utils.JwtService;
 
 import java.io.BufferedReader;
@@ -23,7 +24,7 @@ public class SoTurn {
 
     Logger LOGGER = LoggerFactory.getLogger(this.getClass());
 
-    private static Process turnProcess;
+    private static volatile  Process turnProcess;
 
     public void run() throws IOException, InterruptedException {
         String executableName = checkTurn();
@@ -66,15 +67,14 @@ public class SoTurn {
         return soTurnName;
     }
 
-    // TODO: NEEDS TO MAKE IT TAKING ARGS FROM CONFIGS
     public Thread configureTurnThread(String executableName) throws IOException, InterruptedException {
         LOGGER.info("SoTurn configuring thread");
         Thread turnThread = new Thread(() -> {
             ProcessBuilder pb = new ProcessBuilder(
                     Paths.get(executableName).toAbsolutePath().toString(),
-                    // TODO: MOVE TO THE CONFIG
-                    "--public-ip", "0.0.0.0",
-                    "--realm", "0.0.0.0",
+                    "--public-ip", ConfigReader.getConfig().get("turn.ip"),
+                    "--realm", ConfigReader.getConfig().get("turn.realm"),
+                    "--port", ConfigReader.getConfig().get("turn.port"),
                     "--jwt", JwtService.SECRET
             );
             pb.redirectErrorStream(true);
@@ -100,16 +100,24 @@ public class SoTurn {
 
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            if (turnProcess != null && turnProcess.isAlive()) {
-                turnProcess.destroy();
+            Process p = turnProcess;
 
-                try {
-                    if (!turnProcess.waitFor(5, TimeUnit.SECONDS)) {
-                        turnProcess.destroyForcibly();
-                    }
-                } catch (InterruptedException ignored) {
-                }
+            if (p == null) {
+                return;
             }
+
+            ProcessHandle handle = p.toHandle();
+
+            handle.descendants()
+                    .forEach(child -> {
+                        child.destroyForcibly();
+                    });
+
+            handle.destroyForcibly();
+
+            try {
+                p.waitFor(3, TimeUnit.SECONDS);
+            } catch (InterruptedException ignored) {}
         }));
 
         return turnThread;

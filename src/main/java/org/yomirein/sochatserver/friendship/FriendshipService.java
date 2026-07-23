@@ -138,9 +138,9 @@ public class FriendshipService {
             User u1 = userRepository.findById(userId1).orElseThrow();
             User u2 = userRepository.findById(userId2).orElseThrow();
 
-            Friendship friendship = friendshipRepository.findByUserAndFriend(u1, u2).orElseThrow();
-
-            return friendship.getStatus() == FriendshipStatus.ACCEPTED;
+            Optional<Friendship> friendshipOpt = friendshipRepository.findByUserAndFriend(u1, u2);
+            if (friendshipOpt.isPresent()) return friendshipOpt.get().getStatus() == FriendshipStatus.ACCEPTED;
+            else return false;
         }
         catch (RuntimeException e) {
             throw new RuntimeException(e);

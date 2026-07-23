@@ -4,10 +4,12 @@ import lombok.RequiredArgsConstructor;
 import org.yomirein.sochatserver.calls.p2p.P2PRoom;
 import org.yomirein.sochatserver.sessions.Session;
 import org.yomirein.sochatserver.sessions.SessionManager;
+import org.yomirein.sochatserver.users.User;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 @RequiredArgsConstructor
 public class CallService {
@@ -44,6 +46,25 @@ public class CallService {
             }
         }
 
+        return Optional.empty();
+    }
+
+    public Optional<P2PRoom> findRoomByUser(User user) {
+        Set<Session> userSessions = sessionManager.getUserSessions(user);
+        for (P2PRoom room : callRooms.values()) {
+           if (userSessions.contains(room.getSession1()) || (
+               room.getSession2() != null && userSessions.contains(room.getSession2()))) {
+               return Optional.of(room);
+           }
+        }
+
+        return Optional.empty();
+    }
+
+    public Optional<P2PRoom> findRoomByChatId(long chatId) {
+        if (callRooms.containsKey(chatId)){
+            return Optional.of(callRooms.get(chatId));
+        }
         return Optional.empty();
     }
 

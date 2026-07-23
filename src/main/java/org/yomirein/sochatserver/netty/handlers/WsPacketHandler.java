@@ -93,7 +93,8 @@ public class WsPacketHandler extends SimpleChannelInboundHandler<MessagePacket> 
             case "turn_credentials_get": withAuth(channelHandlerContext, messagePacket, callHandler::turnCredentials); break;
 
             case "call_offer": withAuth(channelHandlerContext, messagePacket, callHandler::call); break;
-            case "call_accept": withAuth(channelHandlerContext, messagePacket, callHandler::acceptCall); break;
+            //case "call_accept": withAuth(channelHandlerContext, messagePacket, callHandler::acceptCall); break;
+            case "call_check": withAuth(channelHandlerContext, messagePacket, callHandler::checkCall); break;
 
             case "call_answer": withAuth(channelHandlerContext, messagePacket, callHandler::answerRtc); break;
             case "call_ice": withAuth(channelHandlerContext, messagePacket, callHandler::iceRtc); break;
@@ -138,12 +139,6 @@ public class WsPacketHandler extends SimpleChannelInboundHandler<MessagePacket> 
         void handle(ChannelHandlerContext ctx, MessagePacket messagePacket, Long userId) throws Exception;
     }
 
-    // Exceptions
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        cause.printStackTrace();
-    }
-
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         LOGGER.trace("INACTIVE CTX {}", ctx.channel().id());
@@ -163,4 +158,11 @@ public class WsPacketHandler extends SimpleChannelInboundHandler<MessagePacket> 
     public void channelActive(ChannelHandlerContext ctx) {
         LOGGER.trace("ACTIVE CTX {}", ctx.channel().id());
     }
+
+    // Exceptions
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        cause.printStackTrace();
+    }
+
 }

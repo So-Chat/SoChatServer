@@ -4,6 +4,7 @@ target/
 !**/src/test/**/target/
 .kotlin
 uploads/
+config.properties
 
 ### IntelliJ IDEA ###
 .idea/modules.xml

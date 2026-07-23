@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import org.yomirein.sochatserver.calls.CallState;
 import org.yomirein.sochatserver.messages.Message;
 
 import java.util.List;
@@ -23,5 +25,5 @@ public class Chat {
     private SenderKey lastSenderKey;
     private Integer unreadMessagesCount;
 
-    private boolean isInCall = false;
+    private CallState callState = CallState.IDLE;
 }

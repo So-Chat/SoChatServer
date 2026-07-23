@@ -9,6 +9,9 @@ import io.netty.handler.stream.ChunkedFile;
 import lombok.RequiredArgsConstructor;
 import org.yomirein.sochatserver.common.models.MessagePacket;
 import org.yomirein.sochatserver.utils.MessageSender;
+import org.yomirein.sochatserver.messages.MessageService;
+import org.yomirein.sochatserver.chats.ChatService;
+import org.yomirein.sochatserver.chats.Chat;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,7 +29,7 @@ import static org.yomirein.sochatserver.utils.MessageSender.sendHttp;
 public class MediaHandler {
 
     private final MediaService mediaService;
-
+    private final ChatService chatService;
 
     public void getMedia(ChannelHandlerContext ctx, FullHttpRequest fullHttpRequest) {
         if (!fullHttpRequest.decoderResult().isSuccess()) {
@@ -48,7 +51,7 @@ public class MediaHandler {
                     HttpHeaderNames.CONTENT_DISPOSITION,
                     "attachment; filename=\"" + media.getFileName() + "\""
             );
-
+            // TODO: Make that only chat member can get chat media after moving everything in TCP protocol
             ctx.write(response);
             ctx.writeAndFlush(new HttpChunkedInput(new ChunkedFile(raf)))
                     .addListener(ChannelFutureListener.CLOSE);
@@ -111,8 +114,21 @@ public class MediaHandler {
             QueryStringDecoder decoder = new QueryStringDecoder(fullHttpRequest.uri());
             Map<String, List<String>> parameters = decoder.parameters();
 
-            mediaService.deleteMedia(parameters.get("id").getFirst());
-            sendHttp(ctx, OK, "Deleted successfully");
+            String mediaId = parameters.get("id").getFirst();
+
+            Media mediaFile = mediaService.getMediaFile(mediaId);
+            Chat chat = chatService.getChatByMessageId(mediaFile.getMessageId(), true);
+
+            // TODO: Make that only media sender can delete their message after moving everything in TCP protocol
+            if (chat.getParticipants().stream().anyMatch((p) -> p.getUserId() == mediaFile.getSenderId())){
+                mediaService.deleteMedia(mediaId);
+                sendHttp(ctx, OK, "Deleted successfully");
+            } else {
+                sendHttp(ctx, FORBIDDEN, "Only chat members can delete their media");
+            }
+
+
+
         } catch (MediaException e) {
             sendHttp(ctx, e.getStatus(), e.getMessage());
         }

@@ -194,4 +194,25 @@ public class ChatService {
         List<Chat> chats = getUserChats(user.getId());
         return chats.stream().anyMatch(chat -> { return chat.getId() == chatId; } );
     }
+
+    public Chat getChatByMessageId(long messageId) {
+        try {
+            return chatRepository.findChatByContainingMessageId(messageId).orElseThrow(() -> new RuntimeException("Chat not found"));
+        } catch (RuntimeException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public Chat getChatByMessageId(long messageId, boolean withParticipants) {
+        try {
+            if (withParticipants) {
+                Chat chat = chatRepository.findChatByContainingMessageId(messageId).orElseThrow(() -> new RuntimeException("Chat not found"));
+                chat.setParticipants(getParticipantList(chat.getId()));
+                return chat;
+            }
+            return chatRepository.findChatByContainingMessageId(messageId).orElseThrow(() -> new RuntimeException("Chat not found"));
+        } catch (RuntimeException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

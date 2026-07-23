@@ -38,6 +38,28 @@ public class ChatRepository {
         }
     }
 
+    public Optional<Chat> findChatByContainingMessageId(long messageId) {
+        String sql = "SELECT c.* FROM chats c JOIN messages m ON m.chat_id = c.id WHERE m.id = ?;";
+
+        try (Connection c = Database.getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setLong(1, messageId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) return Optional.empty();
+
+                Chat chat = new Chat();
+                chat.setId(rs.getLong("id"));
+                chat.setChatType(ChatType.valueOf(rs.getString("type")));
+                chat.setTitle(rs.getString("title"));
+
+                return Optional.of(chat);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
     public Optional<Chat> findByIdWithParticipants(Long chatId) {
         Optional<Chat> opt = findById(chatId);
         if (opt.isEmpty()) return Optional.empty();
