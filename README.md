@@ -12,7 +12,7 @@
 
 
 # About SoChat
-__SoChat enables users to create and manage their own messaging server for private text and voice communication, giving them full control over customization and security!__
+__SoChat enables users to create and manage their own messaging servers for text and voice communication through the dedicated SoChat Client application, giving them full control over customization and security.__
 
 [**Made for SoChat Client**](https://github.com/So-Chat/sochat_client)
 
