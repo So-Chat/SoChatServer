@@ -1,29 +1,66 @@
 # SoChat Server 
+<div align="center">
 
-``` Легко и безопасно! ```
+<h2>Сделай свой сервер для мессенджера!</h2>
 
-<p style="text-align: center;">Eng</p> 
+<p>
+    <a href="./README.md">Eng</a>
+</p>
 
-Сделан на джаве!
+<h3>Написано на Java</h3>
+</div>
 
+
+# About SoChat
 __SoChat позволяет пользователям создавать и управлять собственным сервером для обмена текстовыми и голосовыми сообщениями, предоставляя им полный контроль над настройкой и безопасностью!__
 
 [**Сделано для SoChat Client**](https://github.com/So-Chat/sochat_client)
 
-## ПОКА В РАЗРАБОТКЕ
+Главная цель SoChat Server'а сделать self-host сервера для мессенджеров как можно проще
 
-## Библиотеки использованные в проекте
+Проект сделан для тех кто хочет открыть свой собственный сервер для мессенджеров без сложных настроек или развёртывания
 
-| Library           | Version     |
+Для того чтобы захостить свой сервер вам понадобится скачать Java 23+ версии и PostgreSQL(Поддержка SQLite запланирована в будущем релизе) и открыть SoChatServer.jar, его можно будет легко скачать после выхода первой версии
+
+## ЭТОТ ПРОЕКТ ВСЁ ЕЩЁ В РАЗРАБОТКЕ
+- SoChat находится в активной разработке. Некоторые функции могут быть недоделаны или полностью переделаны.
+
+## Библиотеки использованные в этом проекте
+
+| Бибилотека        | Версия      |
 |-------------------|-------------|
 | Jackson           | 2.20.1      |
 | Netty             | 4.2.9 Final |
 | JJWT              | 0.11.5      |
-| slf4j-simple      | 2.0.9       |
+| logback-classic   | 1.5.32      |
 | HikariCP          | 5.1.0       |
 | PostgreSQL        | 42.7.1      |
 | Lombok            | 1.18.42     |
-| Apache Commons IO | 2.22.0            |
+| Apache Commons IO | 2.22.0       |
 
-## License - Лицензия
-- **Этот проект находится распространяется под [лицензией GPL v3.0](https://github.com/So-Chat/SoChatServer/blob/master/LICENSE)**
+## Сборка из исходного кода
+### Требования
+- Maven
+- Java 23+
+- Git
+- PostgreSQL (SQLite support planned)
+### Клонируйте репозиторий
+```bash 
+git clone https://github.com/So-Chat/SoChatServer.git
+cd SoChatServer
+```
+### Компиляция
+```bash
+mvn clean package
+```
+### Результат
+- После успешной компиляции fat JAR файл будет хранится в папке ```/target``` 
+- Будет выглядеть примерно так: target/SoChatServer-0.0.1-ALPHA.jar
+- Запустить его можно будет спомощью команды 
+```bash
+java -jar SoChatServer-(version)-(state).jar
+```
+
+
+## Лицензия
+- **Этот проект находится под лицензией [GPL v3.0 License](https://github.com/So-Chat/SoChatServer/blob/master/LICENSE)**
