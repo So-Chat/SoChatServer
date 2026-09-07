@@ -1,4 +1,4 @@
-package org.yomirein.sochatserver.database;
+package org.yomirein.sochatserver;
 
 import java.sql.Connection;
 import java.sql.Statement;
@@ -10,6 +10,8 @@ import org.slf4j.LoggerFactory;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
+
+// WILL BE DELETED AND MOVED IN POSTGRESDATABSE.JAVA IN THE NEXT COMMIT
 
 public class DatabaseConfigurator {
 

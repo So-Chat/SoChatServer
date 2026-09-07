@@ -24,26 +24,4 @@ public class JsonConfig {
         return node.hasNonNull(field) ? node.get(field).asInt() : null;
     }
 
-    // mapping User for easier use
-    public static User mapUser(ResultSet rs) throws SQLException {
-        User u = null;
-        try {
-
-            u = new User(
-                    rs.getInt("id"),
-                    rs.getString("nickname"),
-                    rs.getString("username"),
-                    rs.getString("description"),
-                    KeyParser.stringToPublicKeyED25519(rs.getString("ed25519_public_key")),
-                    KeyParser.stringToPublicKeyX25519(rs.getString("x25519_public_key"))
-            );
-
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        return u;
-    }
-
-    // TODO: Made more mapping from repositories
-
 }
