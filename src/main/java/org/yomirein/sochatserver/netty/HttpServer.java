@@ -85,6 +85,10 @@ public class HttpServer {
             b.group(bossGroup, workerGroup)
                 .channel(NioServerSocketChannel.class)
                 .handler(new LoggingHandler(LogLevel.INFO))
+
+                .childOption(ChannelOption.TCP_NODELAY, true)
+                .childOption(ChannelOption.SO_KEEPALIVE, true)
+
                 .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(SocketChannel channel) throws Exception {
@@ -114,8 +118,7 @@ public class HttpServer {
                                     friendsHandler, usersHandler, chatHandler, messageHandler, callHandler, searchHandler, callService));
                             p.addLast(new PacketEncoder());
                         }
-                    }).option(ChannelOption.TCP_NODELAY, true)
-                    .option(ChannelOption.SO_KEEPALIVE, true);;
+                    });
 
             // Starting server
             ChannelFuture future = b.bind(port).sync();
