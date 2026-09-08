@@ -1,6 +1,6 @@
-package org.yomirein.sochatserver.media;
+package org.yomirein.sochatserver.persistance.sqlite.repositories;
 
-import org.yomirein.sochatserver.Database;
+import com.zaxxer.hikari.HikariDataSource;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -10,13 +10,22 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import org.yomirein.sochatserver.media.Media;
 
-public class MediaRepository {
+import org.yomirein.sochatserver.persistance.api.repositories.MediaRepository;
+
+public class SQLiteMediaRepository extends MediaRepository {
+
+    public SQLiteMediaRepository(HikariDataSource dataSource) {
+        super(dataSource);
+    }
+
+    @Override
     public Optional<Media> findById(String id) {
         String sql = "SELECT * FROM media WHERE media_id = ?";
 
-        try (Connection conn = Database.getConnection();
-             PreparedStatement psSelect = conn.prepareStatement(sql)) {
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement psSelect = connection.prepareStatement(sql)) {
 
             psSelect.setString(1, id);
 
@@ -44,11 +53,12 @@ public class MediaRepository {
         }
     }
 
+    @Override
     public boolean deleteById(String id) {
         String sql = "DELETE FROM media WHERE media_id = ?";
 
-        try (Connection c = Database.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, id);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -56,13 +66,14 @@ public class MediaRepository {
         }
     }
 
+    @Override
     public List<Media> findAttachedMessage(long messageId) {
         String sql = "SELECT * FROM media WHERE message_id = ?";
 
         List<Media> out = new ArrayList<>();
 
-        try (Connection c = Database.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement ps = connection.prepareStatement(sql)) {
 
             ps.setLong(1, messageId);
             try (ResultSet rs = ps.executeQuery()) {
@@ -89,38 +100,38 @@ public class MediaRepository {
         }
     }
 
+    @Override
     public boolean update(String mediaId, Long message_id, Integer width, Integer height, Integer length) {
         String sql = "UPDATE media SET message_id = COALESCE(?, message_id), width = COALESCE(?, width), height = COALESCE(?, height), length = COALESCE(?, length) WHERE media_id = ?";
 
-        try (Connection c = Database.getConnection()) {
-            try (PreparedStatement psUpdate = c.prepareStatement(sql)) {
-                psUpdate.setObject(1, message_id);
-                psUpdate.setObject(2, width);
-                psUpdate.setObject(3, height);
-                psUpdate.setObject(4, length);
-                psUpdate.setObject(5, mediaId);
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement psUpdate = connection.prepareStatement(sql)) {
+            psUpdate.setObject(1, message_id);
+            psUpdate.setObject(2, width);
+            psUpdate.setObject(3, height);
+            psUpdate.setObject(4, length);
+            psUpdate.setObject(5, mediaId);
 
-                return psUpdate.executeUpdate() > 0;
-            }
+            return psUpdate.executeUpdate() > 0;
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
+    @Override
     public Media save(String mediaId, long userId, String mimeType, String fileName, long fileSize, String nonce) {
         String sql = "INSERT INTO media(media_id, sender_id, mime_type, file_name, file_size, nonce) VALUES(?,?,?,?,?,?)";
 
-        try (Connection c = Database.getConnection()) {
-            try (PreparedStatement psInsert = c.prepareStatement(sql)) {
-                psInsert.setString(1, mediaId);
-                psInsert.setLong(2, userId);
-                psInsert.setString(3, mimeType);
-                psInsert.setString(4, fileName);
-                psInsert.setLong(5, fileSize);
-                psInsert.setString(6, nonce);
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement psInsert = connection.prepareStatement(sql)) {
+            psInsert.setString(1, mediaId);
+            psInsert.setLong(2, userId);
+            psInsert.setString(3, mimeType);
+            psInsert.setString(4, fileName);
+            psInsert.setLong(5, fileSize);
+            psInsert.setString(6, nonce);
 
-                psInsert.executeUpdate();
-            }
+            psInsert.executeUpdate();
             return new Media(
                     mediaId, null, userId,
                     mimeType, fileName,

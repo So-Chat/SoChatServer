@@ -1,4 +1,6 @@
-package org.yomirein.sochatserver.users;
+package org.yomirein.sochatserver.persistance.postgresql.repositories;
+
+import com.zaxxer.hikari.HikariDataSource;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -9,26 +11,25 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.yomirein.sochatserver.Database;
-import static org.yomirein.sochatserver.utils.JsonConfig.mapUser;
+import org.yomirein.sochatserver.users.User;
+import org.yomirein.sochatserver.persistance.api.repositories.UserRepository;
+import static org.yomirein.sochatserver.persistance.api.Mappers.*;
 
-// UserRepository.java, as like other repositories using for talking with database
-public class UserRepository {
+public class PostgresUserRepository extends UserRepository {
 
-    private static final Logger logger = LoggerFactory.getLogger(UserRepository.class);
+    public PostgresUserRepository(HikariDataSource dataSource) {
+        super(dataSource);
+    }
 
     private static final String USER_FIELDS =
         "id, nickname, username, description, ed25519_public_key, x25519_public_key";
 
+    @Override
     public User saveUser(User user) {
         String sql =
             "INSERT INTO users(nickname, username, ed25519_public_key, x25519_public_key) VALUES (?, ?, ?, ?) RETURNING id";
-        try (
-            Connection dbConnection = Database.getConnection();
-            PreparedStatement ps = dbConnection.prepareStatement(sql)
-        ) {
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, user.getNickname());
             ps.setString(2, user.getUsername());
             ps.setString(
@@ -51,17 +52,16 @@ public class UserRepository {
                 }
             }
         } catch (SQLException e) {
-            logger.error("Error saving a user", e);
+            throw new RuntimeException(e);
         }
         return null;
     }
 
+    @Override
     public Optional<User> findByName(String username) {
         String sql = "SELECT " + USER_FIELDS + " FROM users WHERE username = ?";
-        try (
-            Connection conn = Database.getConnection();
-            PreparedStatement ps = conn.prepareStatement(sql)
-        ) {
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement ps = connection.prepareStatement(sql))  {
             ps.setString(1, username);
             return executeUserQuery(ps);
         } catch (SQLException e) {
@@ -69,13 +69,12 @@ public class UserRepository {
         }
     }
 
+    @Override
     public Optional<User> findById(Long id) {
         String sql = "SELECT " + USER_FIELDS + " FROM users WHERE id = ?";
 
-        try (
-            Connection conn = Database.getConnection();
-            PreparedStatement ps = conn.prepareStatement(sql)
-        ) {
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement ps = connection.prepareStatement(sql))  {
             ps.setLong(1, id);
             return executeUserQuery(ps);
         } catch (SQLException e) {
@@ -83,6 +82,7 @@ public class UserRepository {
         }
     }
 
+    @Override
     public List<User> searchByUsername(String username, int offset, int limit) {
         List<User> out = new ArrayList<>();
 
@@ -95,10 +95,8 @@ public class UserRepository {
             USER_FIELDS +
             " FROM users WHERE username ILIKE ? ORDER BY id DESC OFFSET ? LIMIT ?";
 
-        try (
-            Connection c = Database.getConnection();
-            PreparedStatement ps = c.prepareStatement(sql)
-        ) {
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement ps = connection.prepareStatement(sql))  {
             ps.setString(1, username + "%");
             ps.setLong(2, offset);
             ps.setLong(3, limit);
@@ -111,6 +109,7 @@ public class UserRepository {
         }
     }
 
+    @Override
     public boolean updateUser(
         Long id,
         String username,
@@ -119,10 +118,8 @@ public class UserRepository {
     ) {
         String sql =
             "UPDATE users SET username = COALESCE(?, username), nickname = ?, description = ? WHERE id = ?";
-        try (
-            Connection c = Database.getConnection();
-            PreparedStatement ps = c.prepareStatement(sql)
-        ) {
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement ps = connection.prepareStatement(sql))  {
             ps.setString(1, username);
             ps.setString(2, nickname);
             ps.setString(3, description);

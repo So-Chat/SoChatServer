@@ -6,11 +6,9 @@ import org.yomirein.sochatserver.common.models.MessagePacket;
 import org.yomirein.sochatserver.sessions.Session;
 import org.yomirein.sochatserver.sessions.SessionManager;
 import org.yomirein.sochatserver.users.User;
-import org.yomirein.sochatserver.users.UserRepository;
+import org.yomirein.sochatserver.users.UserService;
 import org.yomirein.sochatserver.utils.JsonConfig;
 import org.yomirein.sochatserver.utils.JwtService;
-
-import java.util.Optional;
 
 import static org.yomirein.sochatserver.utils.MessageSender.sendError;
 
@@ -18,22 +16,20 @@ import static org.yomirein.sochatserver.utils.MessageSender.sendError;
 @RequiredArgsConstructor
 public class AuthHandler {
 
-    private final UserRepository userRepository;
-
+    private final UserService userService;
     private final SessionManager sessionManager;
 
 
     public void authorize(ChannelHandlerContext ctx, MessagePacket messagePacket) throws Exception {
         String token = messagePacket.getPayload().get("token").asText();
 
-        Optional<User> userCheck = userRepository.findByName(JwtService.extractUsername(token));
-
-        if (userCheck.isEmpty()){
+        User user;
+        try {
+            user = userService.getUser(JwtService.extractUsername(token));
+        } catch (RuntimeException e) {
             sendError(ctx, messagePacket, "User not found");
             return;
         }
-
-        User user = userCheck.get();
 
         if (JwtService.isTokenValid(token)){
             Session session = new Session(token, user, ctx.channel());

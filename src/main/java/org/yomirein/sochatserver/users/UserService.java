@@ -5,6 +5,7 @@ import org.yomirein.sochatserver.utils.JwtService;
 
 import lombok.RequiredArgsConstructor;
 
+import org.yomirein.sochatserver.persistance.api.repositories.UserRepository;
 
 @RequiredArgsConstructor
 public class UserService {

@@ -8,6 +8,8 @@ import org.yomirein.sochatserver.media.MediaService;
 import java.util.List;
 import java.util.Optional;
 
+import org.yomirein.sochatserver.persistance.api.repositories.MessageRepository;
+
 @RequiredArgsConstructor
 public class MessageService {
 

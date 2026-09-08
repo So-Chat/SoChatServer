@@ -1,4 +1,6 @@
-package org.yomirein.sochatserver.chats;
+package org.yomirein.sochatserver.persistance.sqlite.repositories;
+
+import com.zaxxer.hikari.HikariDataSource;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -8,32 +10,43 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import org.yomirein.sochatserver.Database;
 import org.yomirein.sochatserver.users.User;
-import static org.yomirein.sochatserver.utils.JsonConfig.mapUser;
+import org.yomirein.sochatserver.chats.Chat;
+import org.yomirein.sochatserver.chats.ChatRole;
+import org.yomirein.sochatserver.chats.ChatType;
+import org.yomirein.sochatserver.chats.Participant;
+import org.yomirein.sochatserver.chats.SenderKey;
 
-public class ChatRepository {
+import org.yomirein.sochatserver.persistance.api.repositories.ChatRepository;
+import static org.yomirein.sochatserver.persistance.api.Mappers.*;
 
+public class SQLiteChatRepository extends ChatRepository {
+
+    public SQLiteChatRepository(HikariDataSource dataSource) {
+        super(dataSource);
+    }
+
+    @Override
     public Optional<Chat> findById(Long id) {
-        String sql = 
+        String sql =
             """
-            SELECT 
+            SELECT
               c.id,
               c.type,
               c.title,
               (
-                SELECT COUNT(*) 
-                FROM message m 
-                JOIN chat_participants p ON p.chat_id = m.chat_id 
-                WHERE p.user_id = 56 
-                  AND m.chat_id = c.id 
+                SELECT COUNT(*)
+                FROM message m
+                JOIN chat_participants p ON p.chat_id = m.chat_id
+                WHERE p.user_id = 56
+                  AND m.chat_id = c.id
                   AND m.id > p.last_read_message_id
-              ) AS unread_count 
+              ) AS unread_count
             FROM chat c
             WHERE c.id = ?;
             """;
-        try (Connection c = Database.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setLong(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 if (!rs.next()) return Optional.empty();
@@ -50,11 +63,12 @@ public class ChatRepository {
         }
     }
 
+    @Override
     public Optional<Chat> findChatByContainingMessageId(long messageId) {
-        String sql = "SELECT c.* FROM chats c JOIN messages m ON m.chat_id = c.id WHERE m.id = ?;";
+        String sql = "SELECT c.* FROM chat c JOIN message m ON m.chat_id = c.id WHERE m.id = ?;";
 
-        try (Connection c = Database.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setLong(1, messageId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (!rs.next()) return Optional.empty();
@@ -71,7 +85,7 @@ public class ChatRepository {
         }
     }
 
-
+    @Override
     public Optional<Chat> findByIdWithParticipants(Long chatId) {
         Optional<Chat> opt = findById(chatId);
         if (opt.isEmpty()) return Optional.empty();
@@ -82,13 +96,14 @@ public class ChatRepository {
     }
 
     // TODO: MAKE GETTING CHATS WITH LAST MESSAGE AND LAST CHAT KEY
+    @Override
     public List<Chat> findAllByParticipantId(Long userId) {
         String sql = "SELECT c.id, c.type, c.title " +
                 "FROM chat c JOIN chat_participants cp ON c.id = cp.chat_id " +
                 "WHERE cp.user_id = ?";
         List<Chat> out = new ArrayList<>();
-        try (Connection c = Database.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setLong(1, userId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -107,6 +122,7 @@ public class ChatRepository {
         }
     }
 
+    @Override
     public Optional<Chat> findPrivateChatBetween(Long userId1, Long userId2) {
         String sql = """
             SELECT c.id, c.type, c.title
@@ -119,8 +135,8 @@ public class ChatRepository {
                 AND SUM(CASE WHEN cp.user_id = ? THEN 1 ELSE 0 END) > 0
             LIMIT 1
         """;
-        try (Connection c = Database.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setLong(1, userId1);
             ps.setLong(2, userId2);
             try (ResultSet rs = ps.executeQuery()) {
@@ -140,12 +156,13 @@ public class ChatRepository {
         }
     }
 
+    @Override
     public List<Participant> loadParticipants(Long chatId) {
         String sql = "SELECT chat_id, user_id, role, last_read_message_id FROM chat_participants WHERE chat_id = ?";
         List<Participant> participants = new ArrayList<>();
 
-        try (Connection c = Database.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement ps = connection.prepareStatement(sql)) {
 
             ps.setLong(1, chatId);
 
@@ -168,23 +185,25 @@ public class ChatRepository {
         }
     }
 
+    @Override
     public boolean addParticipant(Participant participant) {
         String sql = "INSERT INTO chat_participants (chat_id, user_id, role) VALUES (?, ?, ?)";
-        try (Connection c = Database.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setLong(1, participant.getChatId());
             ps.setLong(2, participant.getUserId());
-            ps.setObject(3, participant.getChatRole().name(), java.sql.Types.OTHER);
+            ps.setString(3, participant.getChatRole().name());
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
+    @Override
     public boolean removeParticipant(long chat_id, long user_id) {
         String sql = "DELETE FROM chat_participants WHERE chat_id = ? AND user_id = ?";
-        try (Connection c = Database.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setLong(1, chat_id);
             ps.setLong(2, user_id);
             return ps.executeUpdate() > 0;
@@ -193,13 +212,11 @@ public class ChatRepository {
         }
     }
 
-
-
-
+    @Override
     public boolean removeSenderKeys(long chatId, long userId){
         String sql = "DELETE FROM chat_sender_keys WHERE chat_id = ? AND user_id = ?";
-        try (Connection c = Database.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setLong(1, chatId);
             ps.setLong(2, userId);
             return ps.executeUpdate() > 0;
@@ -208,11 +225,11 @@ public class ChatRepository {
         }
     }
 
-
+    @Override
     public Optional<Participant> getParticipantByUserIdAndChatId(Long userId, Long chatId) {
         String sql = "SELECT * from chat_participants WHERE user_id = ? AND chat_id = ? LIMIT 1";
-        try (Connection c = Database.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement ps = connection.prepareStatement(sql)) {
 
             ps.setLong(1, userId);
             ps.setLong(2, chatId);
@@ -230,12 +247,13 @@ public class ChatRepository {
         }
     }
 
+    @Override
     public List<User> getUsersByChatId(Long chatId) {
         String sql = "SELECT u.* FROM chat_participants cp JOIN users u ON u.id = cp.user_id WHERE cp.chat_id = ?";
         List<User> users = new ArrayList<>();
 
-        try (Connection c = Database.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement ps = connection.prepareStatement(sql)) {
 
             ps.setLong(1, chatId);
 
@@ -252,11 +270,11 @@ public class ChatRepository {
         }
     }
 
-
+    @Override
     public boolean addSenderKey(SenderKey senderKey){
         String sql = "INSERT INTO chat_sender_keys (chat_id, user_id, key_version, chat_key) VALUES (?, ?, ?, ?)";
-        try (Connection c = Database.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setLong(1, senderKey.getChatId());
             ps.setLong(2, senderKey.getUserId());
             ps.setInt(3, senderKey.getKeyVersion());
@@ -267,11 +285,12 @@ public class ChatRepository {
         }
     }
 
+    @Override
     public int getCurrentKeyVersion(long chatId) {
         String sql = "SELECT MAX(key_version) FROM chat_sender_keys WHERE chat_id = ?";
 
-        try (Connection c = Database.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setLong(1, chatId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -284,8 +303,9 @@ public class ChatRepository {
         }
     }
 
+    @Override
     public Optional<SenderKey> findLastSenderKeyByChatAndUser(long chatId, long userId){
-        String sql = 
+        String sql =
             """
             SELECT chat_id, user_id, key_version, chat_key
             FROM chat_sender_keys
@@ -294,8 +314,8 @@ public class ChatRepository {
             LIMIT 1
             """;
 
-        try (Connection c = Database.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setLong(1, chatId);
             ps.setLong(2, userId);
             try (ResultSet rs = ps.executeQuery()) {
@@ -313,6 +333,7 @@ public class ChatRepository {
         }
     }
 
+    @Override
     public List<SenderKey> findAllSenderKeyByChatAndId(long chatId, long userId) {
         String sql =
             """
@@ -324,8 +345,8 @@ public class ChatRepository {
 
         List<SenderKey> senderKeys = new ArrayList<>();
 
-        try (Connection c = Database.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement ps = connection.prepareStatement(sql)) {
 
             ps.setLong(1, chatId);
             ps.setLong(2, userId);
@@ -347,12 +368,13 @@ public class ChatRepository {
         }
     }
 
+    @Override
     public List<SenderKey> findAllSenderKeyByChat(long chatId) {
         String sql = "SELECT chat_id, user_id, key_version, chat_key FROM chat_sender_keys WHERE chat_id = ? ORDER BY key_version DESC";
         List<SenderKey> senderKeys = new ArrayList<>();
 
-        try (Connection c = Database.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement ps = connection.prepareStatement(sql)) {
 
             ps.setLong(1, chatId);
 
@@ -374,13 +396,14 @@ public class ChatRepository {
     }
 
 
+    @Override
     public Chat save(Chat chat) {
         String sql = "INSERT INTO chat (type, title) VALUES (?, ?) RETURNING id";
 
-        try (Connection c = Database.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement ps = connection.prepareStatement(sql)) {
 
-            ps.setObject(1, chat.getChatType().name(), java.sql.Types.OTHER);
+            ps.setString(1, chat.getChatType().name());
             ps.setString(2, chat.getTitle());
 
             try (ResultSet rs = ps.executeQuery()) {
@@ -408,13 +431,11 @@ public class ChatRepository {
         }
     }
 
-
-
-
+    @Override
     public boolean deleteById(long chatId) {
         String sql = "DELETE FROM chat WHERE id = ?";
-        try (Connection c = Database.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setLong(1, chatId);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {

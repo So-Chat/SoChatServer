@@ -3,12 +3,13 @@ package org.yomirein.sochatserver.friendship;
 import java.util.List;
 import java.util.Optional;
 
-import org.yomirein.sochatserver.common.repos.TrustKeysRepository;
+import org.yomirein.sochatserver.persistance.api.repositories.TrustKeysRepository;
+import org.yomirein.sochatserver.persistance.api.repositories.FriendshipRepository;
+import org.yomirein.sochatserver.persistance.api.repositories.UserRepository;
+
 import org.yomirein.sochatserver.users.User;
-import org.yomirein.sochatserver.users.UserRepository;
 
 import lombok.RequiredArgsConstructor;
-
 
 @RequiredArgsConstructor
 public class FriendshipService {
@@ -145,6 +146,12 @@ public class FriendshipService {
         catch (RuntimeException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public Friendship getByUserAndFriend(Long userId1, Long userId2) {
+        User u1 = userRepository.findById(userId1).orElseThrow();
+        User u2 = userRepository.findById(userId2).orElseThrow();
+        return friendshipRepository.findByUserAndFriend(u1, u2).orElseThrow();
     }
 
 

@@ -1,21 +1,32 @@
-package org.yomirein.sochatserver.common.repos;
+package org.yomirein.sochatserver.persistance.sqlite.repositories;
 
-import org.yomirein.sochatserver.Database;
+import com.zaxxer.hikari.HikariDataSource;
 
-import java.sql.*;
+import java.sql.Array;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-public class TrustKeysRepository {
+import org.yomirein.sochatserver.persistance.api.repositories.TrustKeysRepository;
 
+public class SQLiteTrustKeysRepository extends TrustKeysRepository {
+
+    public SQLiteTrustKeysRepository(HikariDataSource dataSource) {
+        super(dataSource);
+    }
+
+    @Override
     public List<String> getEncryptedKeysByUserId(long userId) {
         String sql = "SELECT ARRAY_AGG(fingerprint) as fingerprints " +
                 "FROM trust_keys " +
                 "WHERE user_id = ?";
-        try (Connection c = Database.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement ps = connection.prepareStatement(sql))  {
             ps.setLong(1, userId);
 
             List<String> out = new ArrayList<>();
@@ -34,13 +45,14 @@ public class TrustKeysRepository {
 
     }
 
+    @Override
     public Optional<String> getEncryptedKeyByUserIds(long fnOwnerId, long userId) {
         String sql = "SELECT fingerprint " +
                 "FROM trust_keys " +
                 "WHERE user_id = ? and fn_owner_id = ? " +
                 "LIMIT 1";
-        try (Connection c = Database.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement ps = connection.prepareStatement(sql))  {
             ps.setLong(1, userId);
             ps.setLong(2, fnOwnerId);
 
@@ -53,12 +65,12 @@ public class TrustKeysRepository {
         }
     }
 
-
+    @Override
     public boolean addKeyToUser(long userId, long ownerId, String key){
         String sql = "INSERT INTO trust_keys(user_id, fn_owner_id, fingerprint) VALUES (?, ?, ?)";
 
-        try (Connection c = Database.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement ps = connection.prepareStatement(sql))  {
 
             ps.setLong(1, userId);
             ps.setLong(2, ownerId);
@@ -71,11 +83,12 @@ public class TrustKeysRepository {
         }
     }
 
+    @Override
     public boolean removeKeyFromUser(long userId, long ownerId){
         String sql = "DELETE FROM trust_keys WHERE user_id = ? AND fn_owner_id = ?";
 
-        try (Connection c = Database.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement ps = connection.prepareStatement(sql))  {
 
             ps.setLong(1, userId);
             ps.setLong(2, ownerId);
@@ -86,6 +99,4 @@ public class TrustKeysRepository {
             throw new RuntimeException(e);
         }
     }
-
-
 }

@@ -1,8 +1,9 @@
 package org.yomirein.sochatserver.search;
 
 import lombok.RequiredArgsConstructor;
+
+import org.yomirein.sochatserver.persistance.api.repositories.UserRepository;
 import org.yomirein.sochatserver.users.User;
-import org.yomirein.sochatserver.users.UserRepository;
 
 import java.util.List;
 

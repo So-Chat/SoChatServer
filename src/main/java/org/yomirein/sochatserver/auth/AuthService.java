@@ -8,7 +8,7 @@ import org.yomirein.sochatserver.common.managers.ChallengeManager;
 import org.yomirein.sochatserver.common.models.Challenge;
 import org.yomirein.sochatserver.common.models.MessagePacket;
 import org.yomirein.sochatserver.users.User;
-import org.yomirein.sochatserver.users.UserRepository;
+import org.yomirein.sochatserver.persistance.api.repositories.UserRepository;
 import org.yomirein.sochatserver.utils.JwtService;
 import org.yomirein.sochatserver.utils.JwtType;
 import org.yomirein.sochatserver.utils.KeyParser;
