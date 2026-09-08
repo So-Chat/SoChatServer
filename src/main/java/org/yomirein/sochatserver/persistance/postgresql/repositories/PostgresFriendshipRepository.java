@@ -13,13 +13,14 @@ import org.yomirein.sochatserver.friendship.FriendshipStatus;
 import org.yomirein.sochatserver.users.User;
 
 import org.yomirein.sochatserver.persistance.api.repositories.FriendshipRepository;
+import org.yomirein.sochatserver.persistance.api.repositories.UserRepository;
 
-class PostgresFriendshipRepository extends FriendshipRepository {
+public class PostgresFriendshipRepository extends FriendshipRepository {
 
     private final Connection connection;
-    private final PostgresUserRepository userRepository;
+    private final UserRepository userRepository;
 
-    public PostgresFriendshipRepository(Connection connection, PostgresUserRepository userRepository) {
+    public PostgresFriendshipRepository(Connection connection, UserRepository userRepository) {
         super(connection);
         this.connection = connection;
         this.userRepository = userRepository;

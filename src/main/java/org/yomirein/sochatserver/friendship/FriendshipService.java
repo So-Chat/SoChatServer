@@ -3,12 +3,13 @@ package org.yomirein.sochatserver.friendship;
 import java.util.List;
 import java.util.Optional;
 
-import org.yomirein.sochatserver.common.repos.TrustKeysRepository;
+import org.yomirein.sochatserver.persistance.api.repositories.TrustKeysRepository;
+import org.yomirein.sochatserver.persistance.api.repositories.FriendshipRepository;
+import org.yomirein.sochatserver.persistance.api.repositories.UserRepository;
+
 import org.yomirein.sochatserver.users.User;
-import org.yomirein.sochatserver.users.UserRepository;
 
 import lombok.RequiredArgsConstructor;
-
 
 @RequiredArgsConstructor
 public class FriendshipService {

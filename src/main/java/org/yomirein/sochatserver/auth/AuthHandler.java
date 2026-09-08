@@ -6,7 +6,6 @@ import org.yomirein.sochatserver.common.models.MessagePacket;
 import org.yomirein.sochatserver.sessions.Session;
 import org.yomirein.sochatserver.sessions.SessionManager;
 import org.yomirein.sochatserver.users.User;
-import org.yomirein.sochatserver.users.UserRepository;
 import org.yomirein.sochatserver.utils.JsonConfig;
 import org.yomirein.sochatserver.utils.JwtService;
 
@@ -18,6 +17,7 @@ import static org.yomirein.sochatserver.utils.MessageSender.sendError;
 @RequiredArgsConstructor
 public class AuthHandler {
 
+    // CAN'T USE USERREPOSITORY IN HANDLER, NEED TO USE USERSERVICE OR AUTHSERVICE INSTEAD.
     private final UserRepository userRepository;
 
     private final SessionManager sessionManager;

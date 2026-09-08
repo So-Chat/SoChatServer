@@ -22,6 +22,7 @@ public class FriendsHandler {
 
     private final SessionManager sessionManager;
 
+    // HANDLER CAN'T HAVE REPOSITORIES, NEED TO REFACTOR HERE.
     private final FriendshipRepository friendshipRepository;
 
     private final FriendshipService friendshipService;

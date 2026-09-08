@@ -18,6 +18,8 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.multipart.FileUpload;
 import lombok.AllArgsConstructor;
 
+import org.yomirein.sochatserver.persistance.api.repositories.MediaRepository;
+
 @AllArgsConstructor
 public class MediaService {
 

@@ -3,7 +3,7 @@ package org.yomirein.sochatserver.users;
 import java.util.Optional;
 
 import org.yomirein.sochatserver.common.models.MessagePacket;
-import org.yomirein.sochatserver.common.repos.TrustKeysRepository;
+import org.yomirein.sochatserver.persistance.api.repositories.TrustKeysRepository;
 import org.yomirein.sochatserver.sessions.SessionManager;
 import org.yomirein.sochatserver.utils.JsonConfig;
 import static org.yomirein.sochatserver.utils.MessageSender.notifyUser;

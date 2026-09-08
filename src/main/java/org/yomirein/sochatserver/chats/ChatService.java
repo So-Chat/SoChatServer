@@ -8,6 +8,7 @@ import org.yomirein.sochatserver.users.User;
 import org.yomirein.sochatserver.users.UserService;
 
 import lombok.RequiredArgsConstructor;
+import org.yomirein.sochatserver.persistance.api.repositories.ChatRepository;
 
 @RequiredArgsConstructor
 public class ChatService {
