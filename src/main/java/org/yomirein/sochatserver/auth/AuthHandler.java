@@ -16,7 +16,6 @@ import static org.yomirein.sochatserver.utils.MessageSender.sendError;
 @RequiredArgsConstructor
 public class AuthHandler {
 
-    // CAN'T USE USERREPOSITORY IN HANDLER, NEED TO USE USERSERVICE OR AUTHSERVICE INSTEAD.
     private final UserService userService;
     private final SessionManager sessionManager;
 
