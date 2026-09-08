@@ -2,7 +2,7 @@ package org.yomirein.sochatserver.persistance.api.repositories;
 
 import org.yomirein.sochatserver.users.User;
 
-import java.sql.Connection;
+import com.zaxxer.hikari.HikariDataSource;
 import java.util.List;
 import java.util.Optional;
 
@@ -13,8 +13,8 @@ import org.yomirein.sochatserver.persistance.api.Repository;
 
 public abstract class FriendshipRepository extends Repository  {
 
-    protected FriendshipRepository(Connection connection) {
-        super(connection);
+    protected FriendshipRepository(HikariDataSource dataSource) {
+        super(dataSource);
     }
 
     public abstract List<Friendship> findByUserOrFriend(User user, User friend);

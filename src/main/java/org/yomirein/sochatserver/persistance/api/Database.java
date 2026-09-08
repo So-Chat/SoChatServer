@@ -16,7 +16,7 @@ public abstract class Database {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Database.class);
 
-    protected final HikariDataSource dataSource;
+    @Getter protected final HikariDataSource dataSource;
 
     @Getter protected final ChatRepository chatRepository;
     @Getter protected final MessageRepository messageRepository;
@@ -41,6 +41,7 @@ public abstract class Database {
             LOGGER.error("Error while initalizing database");
             throw new DatabaseException(e.getMessage(), e);
         }
+
     }
 
     public void close() {

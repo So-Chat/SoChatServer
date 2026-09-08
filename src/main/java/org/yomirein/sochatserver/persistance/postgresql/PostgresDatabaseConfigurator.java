@@ -1,6 +1,8 @@
 package org.yomirein.sochatserver.persistance.postgresql;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
@@ -22,11 +24,6 @@ public class PostgresDatabaseConfigurator extends DatabaseConfigurator<Propertie
         try (Connection con = dataSource.getConnection()) {
             Statement st = con.createStatement();
 
-            /*
-            * Move set property from here and use data staight from properties instead of using dbname
-            * args.properties.setProperty("db.name", args.dbName);
-            */
-
             st.executeUpdate("CREATE DATABASE  " + properties.get("db.name"));
             LOGGER.info("Created database successfully");
         } catch (Exception e){
@@ -37,7 +34,7 @@ public class PostgresDatabaseConfigurator extends DatabaseConfigurator<Propertie
 
     @Override
     protected void initializeSchema(Properties properties) throws SQLException {
-        HikariDataSource dataSource = connectPostgres(properties);
+        HikariDataSource dataSource = createDatabaseDataSource(properties);
         try (Connection con = dataSource.getConnection()) {
 
             schemaInitializer.initialize(con);
@@ -59,9 +56,9 @@ public class PostgresDatabaseConfigurator extends DatabaseConfigurator<Propertie
     public HikariDataSource createDatabaseDataSource(Properties properties) {
         return dataSourceFactory(
                 properties.getProperty("db.url"),
+                properties.getProperty("db.name"),
                 properties.getProperty("db.username"),
-                properties.getProperty("db.password"),
-                properties.getProperty("db.name")
+                properties.getProperty("db.password")
         );
     }
 
@@ -69,12 +66,41 @@ public class PostgresDatabaseConfigurator extends DatabaseConfigurator<Propertie
         return dataSourceFactory(
                 properties.getProperty("db.url"),
                 "",
-                properties.getProperty("db.password"),
-                properties.getProperty("db.name")
+                properties.getProperty("db.username"),
+                properties.getProperty("db.password")
         );
     }
 
-    private static HikariDataSource dataSourceFactory(String ipPort, String dbName, String psqlName, String psqlPassword) {
+    public boolean isDatabaseExists(Properties properties, String dbName) {
+        String name;
+        if (dbName == null) {
+            name = properties.getProperty("db.name");
+        } else {
+            name = dbName;
+        }
+        try {
+            HikariDataSource dataSource = connectPostgres(properties);
+
+            try (Connection con = dataSource.getConnection()) {
+
+                // Check for db with given name exists
+                PreparedStatement ps =
+                        con.prepareStatement("SELECT 1 FROM pg_database WHERE datname = ?");
+                ps.setString(1, name);
+
+                ResultSet rs = ps.executeQuery();
+
+                if (rs.next()) {
+                    return true;
+                }
+            }
+            return false;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public static HikariDataSource dataSourceFactory(String ipPort, String dbName, String psqlName, String psqlPassword) {
         HikariConfig cfg = new HikariConfig();
         cfg.setJdbcUrl("jdbc:postgresql://" + ipPort + "/" + dbName);
         cfg.setUsername(psqlName);

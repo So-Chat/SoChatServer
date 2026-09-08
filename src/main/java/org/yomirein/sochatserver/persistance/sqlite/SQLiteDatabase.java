@@ -1,45 +1,45 @@
-package org.yomirein.sochatserver.persistance.postgresql;
+package org.yomirein.sochatserver.persistance.sqlite;
 
 import com.zaxxer.hikari.HikariDataSource;
 
 import org.yomirein.sochatserver.persistance.api.Database;
 import org.yomirein.sochatserver.persistance.api.repositories.*;
-import org.yomirein.sochatserver.persistance.postgresql.repositories.*;
+import org.yomirein.sochatserver.persistance.sqlite.repositories.*;
 
-public class PostgresDatabase extends Database{
+public class SQLiteDatabase extends Database{
 
-    public PostgresDatabase(HikariDataSource dataSource) {
+    public SQLiteDatabase(HikariDataSource dataSource) {
         super(dataSource);
     }
 
     @Override
     public ChatRepository createChatRepository() {
-        return new PostgresChatRepository(getDataSource());
+        return new SQLiteChatRepository(getDataSource());
     }
 
     @Override
     public MessageRepository createMessageRepository() {
-        return new PostgresMessageRepository(getDataSource());
+        return new SQLiteMessageRepository(getDataSource());
     }
 
     @Override
     public UserRepository createUserRepository() {
-        return new PostgresUserRepository(getDataSource());
+        return new SQLiteUserRepository(getDataSource());
     }
 
     @Override
     public FriendshipRepository createFriendshipRepository() {
-        return new PostgresFriendshipRepository(getDataSource(), getUserRepository());
+        return new SQLiteFriendshipRepository(getDataSource(), getUserRepository());
     }
 
     @Override
     public TrustKeysRepository createTrustKeysRepository() {
-        return new PostgresTrustKeysRepository(getDataSource());
+        return new SQLiteTrustKeysRepository(getDataSource());
     }
 
     @Override
     public MediaRepository createMediaRepository() {
-        return new PostgresMediaRepository(getDataSource());
+        return new SQLiteMediaRepository(getDataSource());
 
     }
 }

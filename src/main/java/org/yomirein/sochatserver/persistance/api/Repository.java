@@ -1,12 +1,12 @@
 package org.yomirein.sochatserver.persistance.api;
 
-import java.sql.Connection;
+import com.zaxxer.hikari.HikariDataSource;
 
 public abstract class Repository {
 
-    protected final Connection connection;
+    protected final HikariDataSource dataSource;
 
-    protected Repository(Connection connection) {
-        this.connection = connection;
+    protected Repository(HikariDataSource dataSource) {
+        this.dataSource = dataSource;
     }
 }

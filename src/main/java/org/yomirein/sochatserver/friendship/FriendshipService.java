@@ -148,5 +148,11 @@ public class FriendshipService {
         }
     }
 
+    public Friendship getByUserAndFriend(Long userId1, Long userId2) {
+        User u1 = userRepository.findById(userId1).orElseThrow();
+        User u2 = userRepository.findById(userId2).orElseThrow();
+        return friendshipRepository.findByUserAndFriend(u1, u2).orElseThrow();
+    }
+
 
 }

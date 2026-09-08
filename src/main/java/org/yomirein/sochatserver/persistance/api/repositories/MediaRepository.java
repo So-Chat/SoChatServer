@@ -1,6 +1,6 @@
 package org.yomirein.sochatserver.persistance.api.repositories;
 
-import java.sql.Connection;
+import com.zaxxer.hikari.HikariDataSource;
 import java.util.List;
 import java.util.Optional;
 
@@ -10,8 +10,8 @@ import org.yomirein.sochatserver.persistance.api.Repository;
 
 public abstract class MediaRepository extends Repository  {
 
-    protected MediaRepository(Connection connection) {
-        super(connection);
+    protected MediaRepository(HikariDataSource dataSource) {
+        super(dataSource);
     }
 
     public abstract Optional<Media> findById(String id);

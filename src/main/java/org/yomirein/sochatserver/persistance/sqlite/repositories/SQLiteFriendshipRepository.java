@@ -1,4 +1,8 @@
-package org.yomirein.sochatserver.persistance.postgresql.repositories;
+package org.yomirein.sochatserver.persistance.sqlite.repositories;
+
+import org.yomirein.sochatserver.users.User;
+
+import com.zaxxer.hikari.HikariDataSource;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -10,19 +14,15 @@ import java.util.Optional;
 
 import org.yomirein.sochatserver.friendship.Friendship;
 import org.yomirein.sochatserver.friendship.FriendshipStatus;
-import org.yomirein.sochatserver.users.User;
 
-import com.zaxxer.hikari.HikariDataSource;
-
-import org.yomirein.sochatserver.persistance.api.repositories.FriendshipRepository;
 import org.yomirein.sochatserver.persistance.api.repositories.UserRepository;
-import static org.yomirein.sochatserver.persistance.api.Mappers.*;
+import org.yomirein.sochatserver.persistance.api.repositories.FriendshipRepository;
 
-public class PostgresFriendshipRepository extends FriendshipRepository {
+public class SQLiteFriendshipRepository extends FriendshipRepository {
 
     private final UserRepository userRepository;
 
-    public PostgresFriendshipRepository(HikariDataSource dataSource, UserRepository userRepository) {
+    public SQLiteFriendshipRepository(HikariDataSource dataSource, UserRepository userRepository) {
         super(dataSource);
         this.userRepository = userRepository;
     }
@@ -36,7 +36,7 @@ public class PostgresFriendshipRepository extends FriendshipRepository {
             ps.setLong(1, user.getId());
             ps.setLong(2, friend.getId());
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) out.add(mapFriendship(rs, userRepository));
+                while (rs.next()) out.add(mapFriendship(rs));
             }
             return out;
         } catch (SQLException e) {
@@ -59,7 +59,7 @@ public class PostgresFriendshipRepository extends FriendshipRepository {
             ps.setLong(4, user.getId());
             try (ResultSet rs = ps.executeQuery()) {
                 if (!rs.next()) return Optional.empty();
-                return Optional.of(mapFriendship(rs, userRepository));
+                return Optional.of(mapFriendship(rs));
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -98,7 +98,7 @@ public class PostgresFriendshipRepository extends FriendshipRepository {
             ps.setLong(1, user.getId());
             ps.setString(2, status.name());
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) out.add(mapFriendship(rs, userRepository));
+                while (rs.next()) out.add(mapFriendship(rs));
             }
             return out;
         } catch (SQLException e) {
@@ -115,7 +115,7 @@ public class PostgresFriendshipRepository extends FriendshipRepository {
             ps.setLong(1, friend.getId());
             ps.setString(2, status.name());
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) out.add(mapFriendship(rs, userRepository));
+                while (rs.next()) out.add(mapFriendship(rs));
             }
             return out;
         } catch (SQLException e) {
@@ -165,5 +165,16 @@ public class PostgresFriendshipRepository extends FriendshipRepository {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private Friendship mapFriendship(ResultSet rs) throws SQLException {
+        Friendship f = new Friendship();
+        f.setId(rs.getLong("id"));
+        long uid = rs.getLong("user_id");
+        long fid = rs.getLong("friend_id");
+        userRepository.findById(uid).ifPresent(f::setUser);
+        userRepository.findById(fid).ifPresent(f::setFriend);
+        f.setStatus(FriendshipStatus.valueOf(rs.getString("status")));
+        return f;
     }
 }

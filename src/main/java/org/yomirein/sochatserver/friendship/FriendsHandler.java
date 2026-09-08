@@ -1,8 +1,6 @@
 package org.yomirein.sochatserver.friendship;
 
 import java.util.List;
-import java.util.Optional;
-
 import org.yomirein.sochatserver.common.models.MessagePacket;
 import org.yomirein.sochatserver.sessions.SessionManager;
 import org.yomirein.sochatserver.users.User;
@@ -21,9 +19,6 @@ import lombok.RequiredArgsConstructor;
 public class FriendsHandler {
 
     private final SessionManager sessionManager;
-
-    // HANDLER CAN'T HAVE REPOSITORIES, NEED TO REFACTOR HERE.
-    private final FriendshipRepository friendshipRepository;
 
     private final FriendshipService friendshipService;
     private final UserService userService;
@@ -73,11 +68,7 @@ public class FriendsHandler {
             User toUser = userService.getUser(messagePacket.getPayload().get("username").asText());
             User user = userService.getUser(userId);
 
-            Optional<Friendship> friendshipCheck = friendshipRepository.findByUserAndFriend(user, toUser);
-            if (friendshipCheck.isEmpty()){
-                return;
-            }
-            Friendship friendship = friendshipCheck.get();
+            Friendship friendship = friendshipService.getByUserAndFriend(user.getId(), toUser.getId());
 
             if (friendship.getUser().getId() == user.getId()){
                 MessagePacket answerPacket = buildBaseResponse(messagePacket,"You can't add friend by yourself!")
@@ -111,12 +102,7 @@ public class FriendsHandler {
             User toUser = userService.getUser(messagePacket.getPayload().get("username").asText());
             User user = userService.getUser(userId);
 
-            Optional<Friendship> friendshipCheck = friendshipRepository.findByUserAndFriend(user, toUser);
-            if (friendshipCheck.isEmpty()){
-                return;
-            }
-
-            Friendship friendship = friendshipCheck.get();
+            Friendship friendship = friendshipService.getByUserAndFriend(user.getId(), toUser.getId());
             friendshipService.declineRequest(friendship.getId());
 
             MessagePacket answerPacket = buildBaseResponse(messagePacket,"Friend request declined successfully")
@@ -144,12 +130,7 @@ public class FriendsHandler {
             User toUser = userService.getUser(messagePacket.getPayload().get("username").asText());
             User user = userService.getUser(userId);
 
-            Optional<Friendship> friendshipCheck = friendshipRepository.findByUserAndFriend(user, toUser);
-            if (friendshipCheck.isEmpty()){
-                return;
-            }
-            Friendship friendship = friendshipCheck.get();
-
+            Friendship friendship = friendshipService.getByUserAndFriend(user.getId(), toUser.getId());
             friendshipService.removeFriendship(friendship.getId());
 
             MessagePacket answerPacket = buildBaseResponse(messagePacket,"Friendship deleted successfully")

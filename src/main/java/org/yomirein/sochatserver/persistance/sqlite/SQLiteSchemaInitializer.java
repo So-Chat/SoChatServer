@@ -1,4 +1,4 @@
-package org.yomirein.sochatserver.persistance.postgresql;
+package org.yomirein.sochatserver.persistance.sqlite;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -6,15 +6,16 @@ import java.sql.Statement;
 
 import org.yomirein.sochatserver.persistance.api.SchemaInitializer;
 
-
-public class PostgresSchemaInitializer implements SchemaInitializer {
-
+public class SQLiteSchemaInitializer implements SchemaInitializer {
     @Override
     public void initialize(Connection connection) throws SQLException {
-        Statement st = connection.createStatement();
+        System.out.println("SQLite schema initialization started");
 
-        initTypes(st);
-        initColumns(st);
+        try (Statement st = connection.createStatement()) {
+            initColumns(st);
+        }
+
+        System.out.println("SQLite schema initialization finished");
     }
 
     public void initColumns(Statement st) throws SQLException {
@@ -29,31 +30,15 @@ public class PostgresSchemaInitializer implements SchemaInitializer {
 
     }
 
-    public void initTypes(Statement st) throws SQLException {
-        initChatRoleType(st);
-        initChatType(st);
-    }
-
-    private void initChatRoleType(Statement st) throws SQLException {
-        st.executeUpdate("""
-            CREATE TYPE chat_role AS ENUM ('MEMBER', 'ADMIN','OWNER');
-        """);
-    }
-    private void initChatType(Statement st) throws SQLException {
-        st.executeUpdate("""
-            CREATE TYPE chat_type AS ENUM ('PRIVATE', 'GROUP_INSECURE','GROUP_SECURE', 'CHANNEL');
-        """);
-    }
-
     private void initUsersTable(Statement st) throws SQLException {
         st.executeUpdate("""
             CREATE TABLE users (
-                id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-                nickname varchar(255),
-                username varchar(255) NOT NULL UNIQUE,
-                description varchar(255),
-                ed25519_public_key text NOT NULL,
-                x25519_public_key text NOT NULL
+                id INTEGER PRIMARY KEY,
+                nickname TEXT CHECK (length(nickname) <= 255),
+                username TEXT NOT NULL UNIQUE CHECK (length(username) <= 255),
+                description TEXT CHECK (length(description) <= 255),
+                ed25519_public_key TEXT NOT NULL,
+                x25519_public_key TEXT NOT NULL
             );
         """);
     }
@@ -61,12 +46,12 @@ public class PostgresSchemaInitializer implements SchemaInitializer {
     private void initFriendshipTable(Statement st) throws SQLException {
         st.executeUpdate("""
             CREATE TABLE friendship (
-                id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-                user_id BIGINT NOT NULL,
-                friend_id BIGINT NOT NULL,
-                status VARCHAR(255) NOT NULL,
-                created_at INTEGER NOT NULL DEFAULT EXTRACT(EPOCH FROM CURRENT_TIMESTAMP)::BIGINT,
-                updated_at INTEGER NOT NULL DEFAULT EXTRACT(EPOCH FROM CURRENT_TIMESTAMP)::BIGINT,
+                id INTEGER PRIMARY KEY,
+                user_id INTEGER NOT NULL,
+                friend_id INTEGER NOT NULL,
+                status TEXT NOT NULL CHECK (length(status) <= 255),
+                created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+                updated_at INTEGER NOT NULL DEFAULT (unixepoch()),
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
                 FOREIGN KEY (friend_id) REFERENCES users(id) ON DELETE CASCADE,
                 UNIQUE (user_id, friend_id)
@@ -76,9 +61,9 @@ public class PostgresSchemaInitializer implements SchemaInitializer {
     private void initTrustKeysTable(Statement st) throws SQLException {
         st.executeUpdate("""
             CREATE TABLE trust_keys (
-                id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-                user_id BIGINT NOT NULL,
-                fn_owner_id BIGINT NOT NULL,
+                id INTEGER PRIMARY KEY,
+                user_id INTEGER NOT NULL,
+                fn_owner_id INTEGER NOT NULL,
                 fingerprint TEXT NOT NULL,
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
             );
@@ -88,13 +73,30 @@ public class PostgresSchemaInitializer implements SchemaInitializer {
     private void initChatTable(Statement st) throws SQLException {
         st.executeUpdate("""
             CREATE TABLE chat (
-                id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-                type chat_type NOT NULL,
+                id INTEGER PRIMARY KEY,
+                type TEXT NOT NULL
+                    CHECK (
+                        type IN (
+                            'PRIVATE',
+                            'GROUP_INSECURE',
+                            'GROUP_SECURE',
+                            'CHANNEL'
+                        )
+                    ),
                 title TEXT,
 
+
                 CHECK (
-                    (type = 'PRIVATE' AND title IS NULL) OR
-                    (type IN ('GROUP_SECURE','GROUP_INSECURE', 'CHANNEL') AND title IS NOT NULL)
+                    (type = 'PRIVATE' AND title IS NULL)
+                    OR
+                    (
+                        type IN (
+                            'GROUP_SECURE',
+                            'GROUP_INSECURE',
+                            'CHANNEL'
+                        )
+                        AND title IS NOT NULL
+                    )
                 )
             );
         """);
@@ -102,37 +104,46 @@ public class PostgresSchemaInitializer implements SchemaInitializer {
     private void initMessageTable(Statement st) throws SQLException {
         st.executeUpdate("""
             CREATE TABLE message (
-                id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-                chat_id BIGINT NOT NULL,
-                sender_id BIGINT NOT NULL,
-                reply_message_id BIGINT,
+                id INTEGER PRIMARY KEY,
+                chat_id INTEGER NOT NULL,
+                sender_id INTEGER NOT NULL,
+                reply_message_id INTEGER,
                 content TEXT NOT NULL,
-                timestamp INTEGER NOT NULL DEFAULT EXTRACT(EPOCH FROM CURRENT_TIMESTAMP)::BIGINT,
+                timestamp INTEGER NOT NULL DEFAULT (unixepoch()),
 
                 key_version TEXT NOT NULL,
                 FOREIGN KEY (chat_id) REFERENCES chat(id) ON DELETE CASCADE,
                 FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
                 FOREIGN KEY (reply_message_id) REFERENCES message(id) ON DELETE SET NULL
             );
-        """);                //message TEXT NOT NULL DEFAULT '',
+        """); //message TEXT NOT NULL DEFAULT '',
     }
     private void initChatParticipantsTable(Statement st) throws SQLException {
         st.executeUpdate("""
             CREATE TABLE chat_participants (
-                chat_id BIGINT NOT NULL,
-                user_id BIGINT NOT NULL,
-                role chat_role NOT NULL,
-                last_read_message_id BIGINT NOT NULL DEFAULT 0,
-                PRIMARY KEY (chat_id, user_id)
+                chat_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL,
+                role TEXT NOT NULL
+                    CHECK (
+                        role IN (
+                            'MEMBER',
+                            'ADMIN',
+                            'OWNER'
+                        )
+                    ),
+                last_read_message_id INTEGER NOT NULL DEFAULT 0,
+                PRIMARY KEY (chat_id, user_id),
+                FOREIGN KEY (chat_id) REFERENCES chat(id) ON DELETE CASCADE,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
             );
         """);
     }
     private void initChatSenderKeysTable(Statement st) throws SQLException {
         st.executeUpdate("""
             CREATE TABLE chat_sender_keys(
-                chat_id BIGINT NOT NULL,
-                user_id BIGINT NOT NULL,
-                key_version BIGINT NOT NULL,
+                chat_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL,
+                key_version INTEGER NOT NULL,
                 chat_key TEXT NOT NULL,
                 PRIMARY KEY (chat_id, user_id, key_version),
                 FOREIGN KEY (chat_id) REFERENCES chat(id) ON DELETE CASCADE,
@@ -143,12 +154,12 @@ public class PostgresSchemaInitializer implements SchemaInitializer {
     private void initMediaTable(Statement st) throws SQLException {
         st.executeUpdate("""
            CREATE TABLE media (
-                media_id TEXT PRIMARY KEY,
-                message_id BIGINT,
-                sender_id BIGINT NOT NULL,
+                media_id TEXT PRIMARY KEY NOT NULL,
+                message_id INTEGER,
+                sender_id INTEGER NOT NULL,
                 mime_type TEXT NOT NULL,
                 file_name TEXT NOT NULL,
-                file_size BIGINT NOT NULL,
+                file_size INTEGER NOT NULL,
                 width INTEGER,
                 height INTEGER,
                 length INTEGER,

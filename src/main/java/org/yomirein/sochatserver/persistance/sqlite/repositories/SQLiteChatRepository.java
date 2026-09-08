@@ -1,4 +1,6 @@
-package org.yomirein.sochatserver.persistance.postgresql.repositories;
+package org.yomirein.sochatserver.persistance.sqlite.repositories;
+
+import com.zaxxer.hikari.HikariDataSource;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -9,21 +11,18 @@ import java.util.List;
 import java.util.Optional;
 
 import org.yomirein.sochatserver.users.User;
-
-import com.zaxxer.hikari.HikariDataSource;
-
 import org.yomirein.sochatserver.chats.Chat;
+import org.yomirein.sochatserver.chats.ChatRole;
 import org.yomirein.sochatserver.chats.ChatType;
 import org.yomirein.sochatserver.chats.Participant;
 import org.yomirein.sochatserver.chats.SenderKey;
-import org.yomirein.sochatserver.chats.ChatRole;
 
 import org.yomirein.sochatserver.persistance.api.repositories.ChatRepository;
 import static org.yomirein.sochatserver.persistance.api.Mappers.*;
 
-public class PostgresChatRepository extends ChatRepository {
+public class SQLiteChatRepository extends ChatRepository {
 
-    public PostgresChatRepository(HikariDataSource dataSource) {
+    public SQLiteChatRepository(HikariDataSource dataSource) {
         super(dataSource);
     }
 
@@ -193,7 +192,7 @@ public class PostgresChatRepository extends ChatRepository {
             PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setLong(1, participant.getChatId());
             ps.setLong(2, participant.getUserId());
-            ps.setObject(3, participant.getChatRole().name(), java.sql.Types.OTHER);
+            ps.setString(3, participant.getChatRole().name());
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -404,7 +403,7 @@ public class PostgresChatRepository extends ChatRepository {
         try (Connection connection = dataSource.getConnection();
             PreparedStatement ps = connection.prepareStatement(sql)) {
 
-            ps.setObject(1, chat.getChatType().name(), java.sql.Types.OTHER);
+            ps.setString(1, chat.getChatType().name());
             ps.setString(2, chat.getTitle());
 
             try (ResultSet rs = ps.executeQuery()) {

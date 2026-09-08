@@ -1,10 +1,6 @@
 package org.yomirein.sochatserver.utils;
 
 import com.fasterxml.jackson.databind.*;
-import org.yomirein.sochatserver.users.User;
-
-import java.sql.ResultSet;
-import java.sql.SQLException;
 
 public class JsonConfig {
     // Init static ObjectMapper so we can use it anywhere

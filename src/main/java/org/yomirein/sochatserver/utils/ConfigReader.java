@@ -1,8 +1,10 @@
 package org.yomirein.sochatserver.utils;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -59,5 +61,14 @@ public class ConfigReader {
         }
 
         return config;
+    }
+
+    public static void saveConfig(Properties properties) {
+        try (OutputStream out = new FileOutputStream("config.properties")) {
+            properties.store(out, "");
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

@@ -1,6 +1,6 @@
 package org.yomirein.sochatserver.persistance.api.repositories;
 
-import java.sql.Connection;
+import com.zaxxer.hikari.HikariDataSource;
 import java.util.List;
 import java.util.Optional;
 
@@ -12,8 +12,8 @@ import org.yomirein.sochatserver.persistance.api.Repository;
 
 public abstract class ChatRepository extends Repository {
 
-    protected ChatRepository(Connection connection) {
-        super(connection);
+    protected ChatRepository(HikariDataSource dataSource) {
+        super(dataSource);
     }
 
     public abstract Optional<Chat> findById(Long id);

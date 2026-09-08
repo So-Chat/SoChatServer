@@ -1,9 +1,9 @@
-package org.yomirein.sochatserver.persistance.postgresql.repositories;
+package org.yomirein.sochatserver.persistance.sqlite.repositories;
+
+import com.zaxxer.hikari.HikariDataSource;
 
 import java.sql.Array;
 import java.sql.Connection;
-
-import com.zaxxer.hikari.HikariDataSource;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -14,9 +14,9 @@ import java.util.Optional;
 
 import org.yomirein.sochatserver.persistance.api.repositories.TrustKeysRepository;
 
-public class PostgresTrustKeysRepository extends TrustKeysRepository {
+public class SQLiteTrustKeysRepository extends TrustKeysRepository {
 
-    public PostgresTrustKeysRepository(HikariDataSource dataSource) {
+    public SQLiteTrustKeysRepository(HikariDataSource dataSource) {
         super(dataSource);
     }
 

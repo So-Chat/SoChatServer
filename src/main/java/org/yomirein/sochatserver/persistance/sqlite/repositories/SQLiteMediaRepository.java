@@ -1,4 +1,4 @@
-package org.yomirein.sochatserver.persistance.postgresql.repositories;
+package org.yomirein.sochatserver.persistance.sqlite.repositories;
 
 import com.zaxxer.hikari.HikariDataSource;
 
@@ -14,12 +14,11 @@ import org.yomirein.sochatserver.media.Media;
 
 import org.yomirein.sochatserver.persistance.api.repositories.MediaRepository;
 
-public class PostgresMediaRepository extends MediaRepository {
+public class SQLiteMediaRepository extends MediaRepository {
 
-    public PostgresMediaRepository(HikariDataSource dataSource) {
+    public SQLiteMediaRepository(HikariDataSource dataSource) {
         super(dataSource);
     }
-
 
     @Override
     public Optional<Media> findById(String id) {
@@ -143,5 +142,4 @@ public class PostgresMediaRepository extends MediaRepository {
             throw new RuntimeException(e);
         }
     }
-
 }

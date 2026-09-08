@@ -9,6 +9,8 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -68,6 +70,20 @@ public class SoTurn {
     }
 
     public Thread configureTurnThread(String executableName) throws IOException, InterruptedException {
+        Map<String, String> propertiesMap = ConfigReader.getConfig();
+
+        if (propertiesMap.containsKey("dbturn.ip")) {
+            Properties properties = new Properties();
+
+            properties.setProperty("turn.ip", "0.0.0.0");
+            properties.setProperty("turn.realm", "0.0.0.0");
+            properties.setProperty("turn.port", "3478");
+
+            LOGGER.info("SoTurn configured with properties: " + properties);
+
+            ConfigReader.saveConfig(properties);
+        }
+
         LOGGER.info("SoTurn configuring thread");
         Thread turnThread = new Thread(() -> {
             ProcessBuilder pb = new ProcessBuilder(

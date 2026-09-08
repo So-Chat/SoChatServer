@@ -1,4 +1,4 @@
-package org.yomirein.sochatserver.persistance.postgresql.repositories;
+package org.yomirein.sochatserver.persistance.sqlite.repositories;
 
 import com.zaxxer.hikari.HikariDataSource;
 
@@ -17,15 +17,15 @@ import java.util.Optional;
 import org.yomirein.sochatserver.chats.Participant;
 import org.yomirein.sochatserver.messages.Message;
 
+import static org.yomirein.sochatserver.persistance.api.Mappers.mapMessage;
+
 import org.yomirein.sochatserver.persistance.api.repositories.MessageRepository;
-import static org.yomirein.sochatserver.persistance.api.Mappers.*;
 
-public class PostgresMessageRepository extends MessageRepository {
+public class SQLiteMessageRepository extends MessageRepository {
 
-    public PostgresMessageRepository(HikariDataSource dataSource) {
+    public SQLiteMessageRepository(HikariDataSource dataSource) {
         super(dataSource);
     }
-
 
     @Override
     public Optional<Message> findById(Long id) {
@@ -108,8 +108,8 @@ public class PostgresMessageRepository extends MessageRepository {
         try (Connection connection = dataSource.getConnection();
             PreparedStatement ps = connection.prepareStatement(sql))  {
             ps.setLong(1, chatId);
-            ps.setInt(3, offset);
             ps.setInt(2, limit);
+            ps.setInt(3, offset);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) out.add(mapMessage(rs));
             }
@@ -121,7 +121,7 @@ public class PostgresMessageRepository extends MessageRepository {
 
     @Override
     public List<Message> findUnreadByChatIdOrderByTimestampDesc(Long chatId) {
-        String sql = "SELECT COUNT(*)" +
+        String sql = "SELECT COUNT(m.*)" +
                 "FROM message AS m " +
                 "JOIN chat_participants AS p ON m.chat_id = p.chat_id AND p.user_id = 56 " +
                 "WHERE m.chat_id = 1 AND m.id > p.last_read_message_id " +
@@ -165,7 +165,7 @@ public class PostgresMessageRepository extends MessageRepository {
             if (m.getReplyMessageId() != null) {
                 ps.setLong(3, m.getReplyMessageId());
             } else {
-                ps.setNull(3, Types.BIGINT);
+                ps.setNull(3, Types.INTEGER);
             }
             ps.setString(4, m.getContent());
 

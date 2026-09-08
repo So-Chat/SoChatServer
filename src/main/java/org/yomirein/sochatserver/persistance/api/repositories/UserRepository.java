@@ -1,16 +1,17 @@
 package org.yomirein.sochatserver.persistance.api.repositories;
 
-import java.sql.Connection;
 import java.util.List;
 import java.util.Optional;
 
 import org.yomirein.sochatserver.persistance.api.Repository;
 import org.yomirein.sochatserver.users.User;
 
+import com.zaxxer.hikari.HikariDataSource;
+
 public abstract class UserRepository extends Repository  {
 
-    protected UserRepository(Connection connection) {
-        super(connection);
+    protected UserRepository(HikariDataSource dataSource) {
+        super(dataSource);
     }
 
     public abstract User saveUser(User user);
