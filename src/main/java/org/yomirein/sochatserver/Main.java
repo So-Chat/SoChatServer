@@ -50,7 +50,7 @@ public class Main {
             String dbType = config.get("db.type");
             if (dbType.equals("sqlite")) {
                 return new SQLiteDatabaseSetupWizard().setupDatabase();
-            } else if (dbType.equals("postgres")) {
+            } else if (dbType.equals("postgresql")) {
                 return new PostgresDatabaseSetupWizard().setupDatabase();
             } else {
                 LOGGER.error("Invalid database type specified");

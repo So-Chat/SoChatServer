@@ -63,6 +63,9 @@ public class SoTurn {
                     request,
                     HttpResponse.BodyHandlers.ofFile(savePath)
             );
+            if (!osName.contains("Windows")) {
+                savePath.toFile().setExecutable(true);
+            }
 
             LOGGER.info("SoTurn download complete!");
         }
@@ -72,7 +75,7 @@ public class SoTurn {
     public Thread configureTurnThread(String executableName) throws IOException, InterruptedException {
         Map<String, String> propertiesMap = ConfigReader.getConfig();
 
-        if (propertiesMap.containsKey("dbturn.ip")) {
+        if (!propertiesMap.containsKey("dbturn.ip")) {
             Properties properties = new Properties();
 
             properties.setProperty("turn.ip", "0.0.0.0");
