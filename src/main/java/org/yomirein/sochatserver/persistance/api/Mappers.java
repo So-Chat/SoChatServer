@@ -19,10 +19,10 @@ public class Mappers {
 
             u = new User(
                     rs.getInt("id"),
-                    rs.getString("avatar_media_id"),
                     rs.getString("nickname"),
                     rs.getString("username"),
                     rs.getString("description"),
+                    rs.getString("avatar_media_id"),
                     KeyParser.stringToPublicKeyED25519(rs.getString("ed25519_public_key")),
                     KeyParser.stringToPublicKeyX25519(rs.getString("x25519_public_key"))
             );

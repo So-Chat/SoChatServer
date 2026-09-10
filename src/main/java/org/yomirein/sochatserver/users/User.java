@@ -18,9 +18,6 @@ public class User {
     @Getter @Setter
     private long id;
 
-    @Getter @Setter
-    private String avatarId;
-
     @Setter
     private String nickname;
 
@@ -29,6 +26,9 @@ public class User {
 
     @Getter @Setter
     private String description;
+
+    @Getter @Setter
+    private String avatarId;
 
     @Getter @Setter
     @JsonSerialize(using = PublicKeySerializer.class)

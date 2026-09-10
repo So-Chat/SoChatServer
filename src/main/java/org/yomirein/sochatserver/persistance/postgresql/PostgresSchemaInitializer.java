@@ -52,6 +52,7 @@ public class PostgresSchemaInitializer implements SchemaInitializer {
                 nickname varchar(255),
                 username varchar(255) NOT NULL UNIQUE,
                 description varchar(255),
+                avatar_media_id TEXT NULL,
                 ed25519_public_key text NOT NULL,
                 x25519_public_key text NOT NULL
             );

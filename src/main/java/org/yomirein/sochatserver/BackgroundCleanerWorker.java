@@ -13,7 +13,7 @@ import com.zaxxer.hikari.HikariPoolMXBean;
 import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
-class BackgroundCleanerWorker {
+public class BackgroundCleanerWorker {
 
     private final HikariDataSource dataSource;
 
@@ -33,7 +33,7 @@ class BackgroundCleanerWorker {
                 return;
             }
             /*  TODO: NEED TO COUNT AND DELETE:
-                    USER FRIENDSHIPS
+                    USER FRIENDSHIPS WITH TRUSTKEYS
                     USER MESSAGES(just everything.)
                     USER CHATS(if group - leave, if dm - delete)
                     USER MEDIA
