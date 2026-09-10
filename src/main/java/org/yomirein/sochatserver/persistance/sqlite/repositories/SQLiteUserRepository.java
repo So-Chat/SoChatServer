@@ -131,22 +131,19 @@ public class SQLiteUserRepository extends UserRepository {
         Long id,
         String username,
         String nickname,
-        String description
+        String description,
+        String avatarId
     ) {
         String sql =
-            "UPDATE users SET " +
-            "username = COALESCE(?, username), " +
-            "nickname = ?, " +
-            "description = ? " +
-            "WHERE id = ?";
-
+            "UPDATE users SET username = COALESCE(?, username), nickname = ?, description = ?, avatar_media_id = ?, WHERE id = ?";
         try (Connection connection = dataSource.getConnection();
              PreparedStatement ps = connection.prepareStatement(sql)) {
 
-            ps.setString(1, username);
-            ps.setString(2, nickname);
-            ps.setString(3, description);
-            ps.setLong(4, id);
+                ps.setString(1, username);
+                ps.setString(2, nickname);
+                ps.setString(3, avatarId);
+                ps.setString(4, description);
+                ps.setLong(5, id);
 
             return ps.executeUpdate() > 0;
 

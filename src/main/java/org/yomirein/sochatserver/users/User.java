@@ -18,6 +18,9 @@ public class User {
     @Getter @Setter
     private long id;
 
+    @Getter @Setter
+    private String avatarId;
+
     @Setter
     private String nickname;
 

@@ -19,6 +19,7 @@ public class Mappers {
 
             u = new User(
                     rs.getInt("id"),
+                    rs.getString("avatar_media_id"),
                     rs.getString("nickname"),
                     rs.getString("username"),
                     rs.getString("description"),

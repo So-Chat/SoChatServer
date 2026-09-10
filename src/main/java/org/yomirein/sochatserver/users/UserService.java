@@ -32,9 +32,9 @@ public class UserService {
         return getUser(username);
     }
 
-    public boolean changeProfile(Long userId, String username, String nickname, String description) {
+    public boolean changeProfile(Long userId, String username, String nickname, String description, String avatarId) {
         try{
-            return userRepository.updateUser(userId, username, nickname, description);
+            return userRepository.updateUser(userId, username, nickname, description, avatarId);
         }catch (RuntimeException e) {
             throw new RuntimeException(e);
         }

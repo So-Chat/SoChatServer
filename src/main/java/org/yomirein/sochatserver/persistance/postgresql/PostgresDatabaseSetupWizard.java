@@ -1,10 +1,7 @@
 package org.yomirein.sochatserver.persistance.postgresql;
 
 import java.io.BufferedReader;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.net.URISyntaxException;
 import java.util.Map;
 import java.util.Properties;

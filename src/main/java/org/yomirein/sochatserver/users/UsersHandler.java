@@ -80,9 +80,13 @@ public class UsersHandler {
                     ? messagePacket.payload.get("description").asText()
                     : null;
 
-            userService.changeProfile(userId, username, nickname, description);
-            User user = userService.getUser(userId);
+            String avatarId = messagePacket.payload.has("avatar_id") && !messagePacket.payload.get("avatar_id").isNull()
+                    ? messagePacket.payload.get("avatar_id").asText()
+                    : null;
 
+
+            userService.changeProfile(userId, username, nickname, description, avatarId);
+            User user = userService.getUser(userId);
 
             MessagePacket answerPacket = new MessagePacket.Builder()
                     .type(messagePacket.getType())
@@ -92,6 +96,7 @@ public class UsersHandler {
                     .put("username", user.getUsername())
                     .put("nickname", user.getNickname())
                     .put("description", user.getDescription())
+                    .put("avatar_id", user.getAvatarId())
                     .build();
 
             notifyUser(user, answerPacket, sessionManager);

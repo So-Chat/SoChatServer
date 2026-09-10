@@ -27,19 +27,20 @@ public class PostgresUserRepository extends UserRepository {
     @Override
     public User saveUser(User user) {
         String sql =
-            "INSERT INTO users(nickname, username, ed25519_public_key, x25519_public_key) VALUES (?, ?, ?, ?) RETURNING id";
+            "INSERT INTO users(nickname, username, avatar_media_id, ed25519_public_key, x25519_public_key) VALUES (?, ?, ?, ?, ?) RETURNING id";
         try (Connection connection = dataSource.getConnection();
             PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, user.getNickname());
             ps.setString(2, user.getUsername());
+            ps.setString(3, user.getAvatarId());
             ps.setString(
-                3,
+                4,
                 Base64.getEncoder().encodeToString(
                     user.getEd25519PublicKey().getEncoded()
                 )
             );
             ps.setString(
-                4,
+                5,
                 Base64.getEncoder().encodeToString(
                     user.getX25519PublicKey().getEncoded()
                 )
@@ -114,16 +115,18 @@ public class PostgresUserRepository extends UserRepository {
         Long id,
         String username,
         String nickname,
-        String description
+        String description,
+        String avatarId
     ) {
         String sql =
-            "UPDATE users SET username = COALESCE(?, username), nickname = ?, description = ? WHERE id = ?";
+            "UPDATE users SET username = COALESCE(?, username), nickname = ?, description = ?, avatar_media_id = ?, WHERE id = ?";
         try (Connection connection = dataSource.getConnection();
             PreparedStatement ps = connection.prepareStatement(sql))  {
             ps.setString(1, username);
             ps.setString(2, nickname);
-            ps.setString(3, description);
-            ps.setLong(4, id);
+            ps.setString(3, avatarId);
+            ps.setString(4, description);
+            ps.setLong(5, id);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             throw new RuntimeException(e);

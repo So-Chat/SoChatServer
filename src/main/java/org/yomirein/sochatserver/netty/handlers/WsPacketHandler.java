@@ -75,7 +75,7 @@ public class WsPacketHandler extends SimpleChannelInboundHandler<MessagePacket> 
             case "message_edit" -> withAuth(channelHandlerContext, messagePacket, messageHandler::editMessage);
             case "message_delete" -> withAuth(channelHandlerContext, messagePacket, messageHandler::deleteMessage);
             case "message_read" -> {
-                withAuth(channelHandlerContext, messagePacket, messageHandler::setLastReadMessage); System.out.println("t");
+                withAuth(channelHandlerContext, messagePacket, messageHandler::setLastReadMessage);
             }
             case "message_list" -> withAuth(channelHandlerContext, messagePacket, messageHandler::getRecentMessages);
             case "message_get" -> withAuth(channelHandlerContext, messagePacket, messageHandler::getMessage);

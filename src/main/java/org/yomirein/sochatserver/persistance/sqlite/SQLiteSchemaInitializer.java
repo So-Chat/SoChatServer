@@ -34,6 +34,7 @@ public class SQLiteSchemaInitializer implements SchemaInitializer {
         st.executeUpdate("""
             CREATE TABLE users (
                 id INTEGER PRIMARY KEY,
+                avatar_media_id UUID NULL REFERENCES media(media_id),
                 nickname TEXT CHECK (length(nickname) <= 255),
                 username TEXT NOT NULL UNIQUE CHECK (length(username) <= 255),
                 description TEXT CHECK (length(description) <= 255),

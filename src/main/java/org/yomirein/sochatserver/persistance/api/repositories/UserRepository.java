@@ -22,5 +22,5 @@ public abstract class UserRepository extends Repository  {
 
     public abstract List<User> searchByUsername(String username, int offset, int limit);
 
-    public abstract boolean updateUser(Long id, String username, String nickname, String description);
+    public abstract boolean updateUser(Long id, String username, String nickname, String description, String avatarId);
 }
