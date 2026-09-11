@@ -113,11 +113,14 @@ public class SQLiteSchemaInitializer implements SchemaInitializer {
                 timestamp INTEGER NOT NULL DEFAULT (unixepoch()),
 
                 key_version TEXT NOT NULL,
-                FOREIGN KEY (chat_id) REFERENCES chat(id) ON DELETE CASCADE,
-                FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
-                FOREIGN KEY (reply_message_id) REFERENCES message(id) ON DELETE SET NULL
+
             );
-        """); //message TEXT NOT NULL DEFAULT '',
+        """);
+        /*
+            FOREIGN KEY (chat_id) REFERENCES chat(id) ON DELETE CASCADE,
+            FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (reply_message_id) REFERENCES message(id) ON DELETE SET NULL
+        */
     }
     private void initChatParticipantsTable(Statement st) throws SQLException {
         st.executeUpdate("""

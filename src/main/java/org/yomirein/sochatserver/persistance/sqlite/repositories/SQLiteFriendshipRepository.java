@@ -156,11 +156,23 @@ public class SQLiteFriendshipRepository extends FriendshipRepository {
     }
 
     @Override
-    public boolean deleteById(long friendshipId) {
+    public boolean deleteById(Long friendshipId) {
         String sql = "DELETE FROM friendship WHERE id = ?";
         try (Connection connection = dataSource.getConnection();
             PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setLong(1, friendshipId);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public boolean deleteByUserId(Long id) {
+        String sql = "DELETE FROM friendship WHERE ? IN (user_id, friend_id)";
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setLong(1, id);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             throw new RuntimeException(e);

@@ -40,6 +40,11 @@ public class UserService {
         }
     }
 
-
-
+    public boolean deleteUser(Long userId) {
+        try {
+            return userRepository.deleteById(userId);
+        } catch (RuntimeException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

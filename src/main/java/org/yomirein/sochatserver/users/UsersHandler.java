@@ -1,9 +1,11 @@
 package org.yomirein.sochatserver.users;
 
 import java.util.Optional;
+import java.util.Set;
 
 import org.yomirein.sochatserver.common.models.MessagePacket;
 import org.yomirein.sochatserver.persistance.api.repositories.TrustKeysRepository;
+import org.yomirein.sochatserver.sessions.Session;
 import org.yomirein.sochatserver.sessions.SessionManager;
 import org.yomirein.sochatserver.utils.JsonConfig;
 import static org.yomirein.sochatserver.utils.MessageSender.notifyUser;
@@ -102,6 +104,28 @@ public class UsersHandler {
             notifyUser(user, answerPacket, sessionManager);
 
 
+        } catch (Exception e) {
+            System.out.println(e);
+            sendError(channelHandlerContext, messagePacket, e.getMessage());
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void deleteUser(ChannelHandlerContext channelHandlerContext, MessagePacket messagePacket, Long userId) {
+        try {
+            User user = userService.getUser(userId);
+            Set<Session> userSessions = sessionManager.getUserSessions(user);
+            userService.deleteUser(userId);
+
+            MessagePacket answerPacket = new MessagePacket.Builder()
+                    .type(messagePacket.getType())
+                    .put("success", true)
+                    .put("requestId", messagePacket.getPayload().get("requestId").asText())
+                    .put("server_message", "Deleted user successfully.")
+                    .put("user_id", userId)
+                    .build();
+
+            notifyUser(userSessions, answerPacket);
         } catch (Exception e) {
             System.out.println(e);
             sendError(channelHandlerContext, messagePacket, e.getMessage());

@@ -133,6 +133,17 @@ public class PostgresUserRepository extends UserRepository {
         }
     }
 
+    public boolean deleteById(Long id) {
+        String sql = "DELETE FROM users WHERE id = ?";
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement ps = connection.prepareStatement(sql))  {
+            ps.setLong(1, id);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     // For easier mapping
     private Optional<User> executeUserQuery(PreparedStatement ps)
         throws SQLException {

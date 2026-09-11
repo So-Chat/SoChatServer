@@ -29,5 +29,7 @@ public abstract class FriendshipRepository extends Repository  {
 
     public abstract Friendship saveOrUpdate(Friendship f);
 
-    public abstract boolean deleteById(long friendshipId);
+    public abstract boolean deleteById(Long friendshipId);
+
+    public abstract boolean deleteByUserId(Long id);
 }
