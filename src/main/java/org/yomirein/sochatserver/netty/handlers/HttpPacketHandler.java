@@ -10,6 +10,7 @@ import org.yomirein.sochatserver.utils.JsonConfig;
 import static org.yomirein.sochatserver.utils.MessageSender.sendHttp;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -78,8 +79,8 @@ public class HttpPacketHandler extends SimpleChannelInboundHandler<FullHttpReque
 
             // Getting json from request
             if (uri.startsWith("/auth/")) {
-                Map<String, Object> map = JsonConfig.MAPPER.readValue(body, Map.class);
-                Map<String, Object> payload = (Map<String, Object>) map.get("payload");
+                Map<String, Object> map = JsonConfig.MAPPER.readValue(body, new TypeReference<Map<String, Object>>() {});
+                Map<String, Object> payload = JsonConfig.MAPPER.convertValue(map.get("payload"), new TypeReference<Map<String, Object>>() {});
                 switch (uri) {
                     // AuthService works like handler and service because of its easy work
 

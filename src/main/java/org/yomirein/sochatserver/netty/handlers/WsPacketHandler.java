@@ -62,6 +62,7 @@ public class WsPacketHandler extends SimpleChannelInboundHandler<MessagePacket> 
             // USER SERVICE
             case "user_get" -> withAuth(channelHandlerContext, messagePacket, usersHandler::getUser);
             case "user_update_profile" -> withAuth(channelHandlerContext, messagePacket, usersHandler::changeProfile);
+            case "user_delete" -> withAuth(channelHandlerContext, messagePacket, usersHandler::deleteUser);
             // CHAT MANAGEMENT
             case "chat_create" -> withAuth(channelHandlerContext, messagePacket, chatHandler::createChat);
             case "chat_list" -> withAuth(channelHandlerContext, messagePacket, chatHandler::getUserChats);

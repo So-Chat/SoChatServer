@@ -111,11 +111,8 @@ public class PostgresSchemaInitializer implements SchemaInitializer {
                 timestamp INTEGER NOT NULL DEFAULT EXTRACT(EPOCH FROM CURRENT_TIMESTAMP)::BIGINT,
 
                 key_version TEXT NOT NULL,
-                FOREIGN KEY (chat_id) REFERENCES chat(id) ON DELETE CASCADE,
-                FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
-                FOREIGN KEY (reply_message_id) REFERENCES message(id) ON DELETE SET NULL
             );
-        """);                //message TEXT NOT NULL DEFAULT '',
+        """);
     }
     private void initChatParticipantsTable(Statement st) throws SQLException {
         st.executeUpdate("""
