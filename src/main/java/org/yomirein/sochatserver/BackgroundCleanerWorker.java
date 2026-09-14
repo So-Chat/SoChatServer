@@ -4,8 +4,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.yomirein.sochatserver.media.MediaService;
-import org.yomirein.sochatserver.users.UserService;
+import org.yomirein.sochatserver.persistance.api.repositories.ChatRepository;
+import org.yomirein.sochatserver.persistance.api.repositories.MediaRepository;
+import org.yomirein.sochatserver.persistance.api.repositories.MessageRepository;
 
 import com.zaxxer.hikari.HikariDataSource;
 import com.zaxxer.hikari.HikariPoolMXBean;
@@ -17,8 +18,9 @@ public class BackgroundCleanerWorker {
 
     private final HikariDataSource dataSource;
 
-    private final UserService userService;
-    private final MediaService mediaService;
+    private final ChatRepository chatRepository;
+    private final MessageRepository messageRepository;
+    private final MediaRepository mediaRepository;
 
     private boolean isDatabaseBusy() {
         HikariPoolMXBean pool = dataSource.getHikariPoolMXBean();
@@ -32,16 +34,18 @@ public class BackgroundCleanerWorker {
             if (isDatabaseBusy()) {
                 return;
             }
-            /*  TODO: NEED TO COUNT AND DELETE:
-                    USER FRIENDSHIPS WITH TRUSTKEYS
-                    USER MESSAGES(just everything.)
-                    USER CHATS(if group - leave, if dm - delete)
-                    USER MEDIA
+            chatRepository.deleteOrphaned();
+            messageRepository.deleteOrphaned();
 
-                    MEDIA ITSELF IF IT DOES NOT BELONGS TO SOMETHING
+            mediaRepository.deleteOrphaned();
+            /*  TODO: NEED TO COUNT AND DELETE:
+                    USER FRIENDSHIPS WITH TRUSTKEYS - done using FK
+                    USER MESSAGES(just everything.) - done
+                    USER CHATS(if group - leave, if dm - delete) - done
+                    USER MEDIA - deleting tables but not cleaning files, not complete fully
             */
         };
-        scheduledExecutorService.scheduleAtFixedRate(task, 1, 20, TimeUnit.MINUTES);
+        scheduledExecutorService.scheduleAtFixedRate(task, 1, 5, TimeUnit.MINUTES);
 
         Runtime.getRuntime().addShutdownHook(new Thread(scheduledExecutorService::shutdown));
     }

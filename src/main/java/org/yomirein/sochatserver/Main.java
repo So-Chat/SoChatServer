@@ -29,8 +29,6 @@ public class Main {
 
         LOGGER.info("Running on OS: " + osName + " " + osVersion + " " + osArch);
 
-
-
         try {
             Database database = databaseOptionConfigurator();
 

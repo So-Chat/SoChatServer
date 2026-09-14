@@ -13,7 +13,7 @@ public class UserService {
 
     public User getUser(String username) {
         try{
-            return userRepository.findByName(username).orElseThrow(() -> new RuntimeException("User not found"));
+            return userRepository.findByName(username).orElse(null);
         }catch (RuntimeException e) {
             throw new RuntimeException(e);
         }
@@ -43,6 +43,14 @@ public class UserService {
     public boolean deleteUser(Long userId) {
         try {
             return userRepository.deleteById(userId);
+        } catch (RuntimeException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public User createUser(User user) {
+        try {
+            return userRepository.saveUser(user);
         } catch (RuntimeException e) {
             throw new RuntimeException(e);
         }

@@ -51,4 +51,6 @@ public abstract class ChatRepository extends Repository {
     public abstract Chat save(Chat chat);
 
     public abstract boolean deleteById(long chatId);
+
+    public abstract boolean deleteOrphaned();
 }

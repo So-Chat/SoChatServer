@@ -112,8 +112,7 @@ public class SQLiteSchemaInitializer implements SchemaInitializer {
                 content TEXT NOT NULL,
                 timestamp INTEGER NOT NULL DEFAULT (unixepoch()),
 
-                key_version TEXT NOT NULL,
-
+                key_version TEXT NOT NULL
             );
         """);
         /*

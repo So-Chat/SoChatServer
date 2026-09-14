@@ -19,6 +19,7 @@ import org.yomirein.sochatserver.search.SearchHandler;
 import org.yomirein.sochatserver.search.SearchService;
 import org.yomirein.sochatserver.netty.HttpServer;
 import org.yomirein.sochatserver.sessions.SessionManager;
+import org.yomirein.sochatserver.test.TestService;
 import org.yomirein.sochatserver.persistance.api.repositories.*;
 import org.yomirein.sochatserver.users.UserService;
 import org.yomirein.sochatserver.users.UsersHandler;
@@ -57,7 +58,6 @@ public class SoChat {
         MediaRepository mediaRepository = database.getMediaRepository();
 
         // Services initialization
-        AuthService authService = new AuthService(challengeManager, userRepository);
         FriendshipService friendshipService = new FriendshipService(friendshipRepository, userRepository, trustKeysRepository);
         UserService userService = new UserService(userRepository);
         ChatService chatService = new ChatService(userService, chatRepository);
@@ -65,6 +65,7 @@ public class SoChat {
         MessageService messageService = new MessageService(messageRepository, mediaService);
         CallService callService = new CallService(sessionManager);
         SearchService searchService = new SearchService(userRepository);
+        AuthService authService = new AuthService(challengeManager, userRepository);
 
         // Handlers initialization
         AuthHandler authHandler = new AuthHandler(userService,sessionManager);
@@ -81,7 +82,24 @@ public class SoChat {
                 userHandler, chatHandler, messageHandler, mediaHandler, callHandler, searchHandler);
 
         // Run everything
-        httpServer.run();
+        Thread httpServerThread = new Thread(() -> {
+            try {
+                httpServer.run();
+            } catch (Exception e) {
+                LOGGER.error(e.getMessage());
+            }
+        });
+        Thread testServiceThread = new Thread(() -> {
+            try {
+                Thread.sleep(5000);
+                TestService testService = new TestService(friendshipService, userService, chatService, messageService, messageRepository, chatRepository);
+                testService.userDeletionTest();
+            } catch (Exception e) {
+                LOGGER.error(e.getMessage());
+            }
+        });
+        httpServerThread.start();
+        testServiceThread.start();
 
     }
 }

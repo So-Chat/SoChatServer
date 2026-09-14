@@ -86,6 +86,30 @@ public class SQLiteMessageRepository extends MessageRepository {
     }
 
     @Override
+    public boolean deleteOrphaned() {
+        String sql = """
+            DELETE FROM message
+            WHERE id IN (
+                SELECT m.id
+                FROM message m
+                WHERE NOT EXISTS (
+                    SELECT 1
+                    FROM chat_participants cp
+                    WHERE cp.chat_id = m.chat_id
+                )
+                ORDER BY m.id
+                LIMIT 1000
+            );
+        """;
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement ps = connection.prepareStatement(sql))  {
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     public List<Message> findTop20ByChatIdOrderByTimestampDesc(Long chatId) {
         String sql = "SELECT id, chat_id, sender_id, reply_message_id, content, timestamp, key_version FROM message WHERE chat_id = ? ORDER BY timestamp DESC LIMIT 20";
         List<Message> out = new ArrayList<>();

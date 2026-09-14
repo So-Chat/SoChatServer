@@ -23,6 +23,8 @@ public abstract class MessageRepository extends Repository  {
 
     public abstract boolean deleteById(Long messageId);
 
+    public abstract boolean deleteOrphaned();
+
     public abstract List<Message> findTop20ByChatIdOrderByTimestampDesc(Long chatId);
 
     public abstract List<Message> findByChatIdOrderByTimestampDesc(Long chatId, int offset, int limit);

@@ -106,7 +106,7 @@
 
                 <configuration>
                     <release>25</release>
-
+                    <argLine>--enable-native-access=ALL-UNNAMED</argLine>
                     <annotationProcessorPaths>
                         <path>
                             <groupId>org.projectlombok</groupId>

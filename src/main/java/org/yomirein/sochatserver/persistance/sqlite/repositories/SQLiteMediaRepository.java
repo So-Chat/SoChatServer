@@ -67,6 +67,35 @@ public class SQLiteMediaRepository extends MediaRepository {
     }
 
     @Override
+    public boolean deleteOrphaned() {
+        String sql = """
+            DELETE FROM media
+            WHERE media_id IN (
+                SELECT md.media_id
+                FROM media md
+                WHERE md.message_id IS NOT NULL
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM message m
+                    WHERE m.id = md.message_id
+                )
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM users u
+                    WHERE md.media_id = u.avatar_media_id
+                )
+                LIMIT 1000
+            );
+        """;
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement ps = connection.prepareStatement(sql)) {
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     public List<Media> findAttachedMessage(long messageId) {
         String sql = "SELECT * FROM media WHERE message_id = ?";
 

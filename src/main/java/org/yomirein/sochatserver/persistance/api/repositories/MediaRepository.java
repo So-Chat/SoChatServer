@@ -18,6 +18,8 @@ public abstract class MediaRepository extends Repository  {
 
     public abstract boolean deleteById(String id);
 
+    public abstract boolean deleteOrphaned();
+
     public abstract List<Media> findAttachedMessage(long messageId);
 
     public abstract boolean update(String mediaId, Long message_id, Integer width, Integer height, Integer length);

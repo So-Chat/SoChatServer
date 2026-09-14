@@ -22,7 +22,7 @@ public class SQLiteUserRepository extends UserRepository {
     }
 
     private static final String USER_FIELDS =
-        "id, nickname, username, description, ed25519_public_key, x25519_public_key";
+        "id, nickname, username, description, avatar_media_id, ed25519_public_key, x25519_public_key";
 
     @Override
     public User saveUser(User user) {

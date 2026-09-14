@@ -443,4 +443,33 @@ public class PostgresChatRepository extends ChatRepository {
             throw new RuntimeException(e);
         }
     }
+
+    @Override
+    public boolean deleteOrphaned() {
+        String sql = """
+        DELETE FROM chat
+        WHERE id IN (
+            SELECT c.id
+            FROM chat c
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM message m
+                WHERE m.chat_id = c.id
+            )
+            AND NOT EXISTS (
+                SELECT 1
+                FROM chat_participants cp
+                WHERE cp.chat_id = c.id
+            )
+            ORDER BY c.id
+            LIMIT 1000
+        );
+        """;
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement ps = connection.prepareStatement(sql)) {
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
