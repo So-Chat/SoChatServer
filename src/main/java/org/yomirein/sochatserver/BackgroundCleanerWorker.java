@@ -36,7 +36,6 @@ public class BackgroundCleanerWorker {
             }
             chatRepository.deleteOrphaned();
             messageRepository.deleteOrphaned();
-
             mediaRepository.deleteOrphaned();
             /*  TODO: NEED TO COUNT AND DELETE:
                     USER FRIENDSHIPS WITH TRUSTKEYS - done using FK

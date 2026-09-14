@@ -88,8 +88,8 @@ public class PostgresMessageRepository extends MessageRepository {
     @Override
     public boolean deleteOrphaned() {
         String sql = """
-            DELETE FROM message +
-            WHERE id IN ( +
+            DELETE FROM message
+            WHERE id IN (
                 SELECT m.id
                 FROM message m
                 WHERE NOT EXISTS (

@@ -110,7 +110,7 @@ public class PostgresSchemaInitializer implements SchemaInitializer {
                 content TEXT NOT NULL,
                 timestamp INTEGER NOT NULL DEFAULT EXTRACT(EPOCH FROM CURRENT_TIMESTAMP)::BIGINT,
 
-                key_version TEXT NOT NULL,
+                key_version TEXT NOT NULL
             );
         """);
     }
@@ -121,7 +121,9 @@ public class PostgresSchemaInitializer implements SchemaInitializer {
                 user_id BIGINT NOT NULL,
                 role chat_role NOT NULL,
                 last_read_message_id BIGINT NOT NULL DEFAULT 0,
-                PRIMARY KEY (chat_id, user_id)
+                PRIMARY KEY (chat_id, user_id),
+                FOREIGN KEY (chat_id) REFERENCES chat(id) ON DELETE CASCADE,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
             );
         """);
     }

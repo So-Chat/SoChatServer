@@ -155,12 +155,15 @@ public class TestService {
         messageRepository.deleteOrphaned();
         chatRepository.deleteOrphaned();
         try {
-            LOGGER.info("Chat state: " + chatService.getChat(chat.getId()));
+            LOGGER.info("Chat messages: " + messageService.getChatMessages(chat.getId()));
         } catch (Exception e) {
             LOGGER.info("Failed getting");
         }
         try {
-            LOGGER.info("Chat messages: " + messageService.getChatMessages(chat.getId()));
+            Chat chat1 = chatService.getChat(chat.getId());
+            LOGGER.info("Chat state: " + chat1);
+            LOGGER.info("Chat participants state: " + chatService.getParticipantList(chat.getId()));
+
         } catch (Exception e) {
             LOGGER.info("Failed getting");
         }
