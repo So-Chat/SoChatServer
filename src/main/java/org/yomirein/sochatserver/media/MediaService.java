@@ -103,6 +103,34 @@ public class MediaService {
         return mediaRepository.update(mediaId, messageId, null, null, null);
     }
 
+    public long getMediaFilesCount() {
+        long totalFiles;
+
+        try (Stream<Path> stream = Files.walk(root)) {
+            totalFiles = stream
+                .filter(Files::isRegularFile)
+                .count();
+        }
+        return totalFiles;
+    }
+
+    public List<String> getMediaFilesId(int count) {
+        List<String> mediaIds = new ArrayList<>(count);
+
+        try (Stream<Path> paths = Files.walk(root)) {
+            paths
+                .filter(Files::isRegularFile)
+                .forEach(path -> {
+                    String fileId = extractFileId(path);
+
+                    if (fileId != null) {
+                        mediaIds.add(fileId);
+                    }
+                });
+        }
+        return mediaId
+    }
+
     public void deleteMedia(String mediaId) throws MediaException {
         Optional<Media> mediaOptional = mediaRepository.findById(mediaId);
 
