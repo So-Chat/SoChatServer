@@ -1,9 +1,13 @@
 package org.yomirein.sochatserver;
 
+import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.yomirein.sochatserver.media.MediaService;
 import org.yomirein.sochatserver.persistance.api.repositories.ChatRepository;
 import org.yomirein.sochatserver.persistance.api.repositories.MediaRepository;
 import org.yomirein.sochatserver.persistance.api.repositories.MessageRepository;
@@ -22,6 +26,10 @@ public class BackgroundCleanerWorker {
     private final MessageRepository messageRepository;
     private final MediaRepository mediaRepository;
 
+    private final MediaService mediaService;
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(BackgroundCleanerWorker.class);
+
     private boolean isDatabaseBusy() {
         HikariPoolMXBean pool = dataSource.getHikariPoolMXBean();
         return pool.getThreadsAwaitingConnection() > 0;
@@ -37,15 +45,15 @@ public class BackgroundCleanerWorker {
             chatRepository.deleteOrphaned();
             messageRepository.deleteOrphaned();
             mediaRepository.deleteOrphaned();
-            /*  TODO: NEED TO COUNT AND DELETE:
-                    USER FRIENDSHIPS WITH TRUSTKEYS - done using FK
-                    USER MESSAGES(just everything.) - done
-                    USER CHATS(if group - leave, if dm - delete) - done
-                    USER MEDIA - deleting tables but not cleaning files, not complete fully
-            */
+            try {
+                mediaService.cleanIoOprphanedMediaFiles();
+            } catch (IOException e) {
+                LOGGER.error("Error while cleaning IO media files: ", e);
+            }
         };
         scheduledExecutorService.scheduleAtFixedRate(task, 1, 5, TimeUnit.MINUTES);
 
         Runtime.getRuntime().addShutdownHook(new Thread(scheduledExecutorService::shutdown));
     }
+
 }

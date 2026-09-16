@@ -1,5 +1,7 @@
 package org.yomirein.sochatserver;
 
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yomirein.sochatserver.auth.AuthHandler;
@@ -23,7 +25,7 @@ import org.yomirein.sochatserver.test.TestService;
 import org.yomirein.sochatserver.persistance.api.repositories.*;
 import org.yomirein.sochatserver.users.UserService;
 import org.yomirein.sochatserver.users.UsersHandler;
-
+import org.yomirein.sochatserver.utils.ConfigReader;
 import org.yomirein.sochatserver.persistance.api.Database;
 
 import io.netty.util.internal.logging.InternalLoggerFactory;
@@ -89,6 +91,7 @@ public class SoChat {
                 LOGGER.error(e.getMessage());
             }
         });
+
         Thread testServiceThread = new Thread(() -> {
             try {
                 Thread.sleep(5000);
@@ -100,6 +103,5 @@ public class SoChat {
         });
         httpServerThread.start();
         testServiceThread.start();
-
     }
 }

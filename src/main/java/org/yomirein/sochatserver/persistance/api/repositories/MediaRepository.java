@@ -1,11 +1,11 @@
 package org.yomirein.sochatserver.persistance.api.repositories;
 
 import com.zaxxer.hikari.HikariDataSource;
+
 import java.util.List;
 import java.util.Optional;
 
 import org.yomirein.sochatserver.media.Media;
-
 import org.yomirein.sochatserver.persistance.api.Repository;
 
 public abstract class MediaRepository extends Repository  {
@@ -19,6 +19,8 @@ public abstract class MediaRepository extends Repository  {
     public abstract boolean deleteById(String id);
 
     public abstract boolean deleteOrphaned();
+
+    public abstract List<String> checkForNonexistentIOIds(List<String> idList);
 
     public abstract List<Media> findAttachedMessage(long messageId);
 

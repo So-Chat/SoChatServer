@@ -89,25 +89,33 @@ public class MediaHandler {
             if (authHeader != null && authHeader.startsWith("Bearer ")) {
                 token = authHeader.substring(7).trim();
             }
+            boolean isAvatar = Boolean.parseBoolean(
+                request.headers().get("Is-Avatar")
+            );
 
             FileUpload file = null;
 
             while (decoder.hasNext()) {
                 InterfaceHttpData data = decoder.next();
 
-                if (data.getHttpDataType() != InterfaceHttpData.HttpDataType.Attribute 
-                && data.getHttpDataType() == InterfaceHttpData.HttpDataType.FileUpload) {
+                if (data.getHttpDataType() == InterfaceHttpData.HttpDataType.FileUpload) {
                     file = (FileUpload) data;
                 }
             }
             if (file != null) {
                 try {
+                    if (isAvatar) { mediaService.validateImage(file.getFile()); }
+
                     String mediaId = mediaService.saveUploadedFile(token, file, nonce);
                     sendHttp(ctx, OK, mediaId);
                 } catch (MediaException e) {
                     sendHttp(ctx, e.getStatus(), e.getMessage());
                 } catch (IOException e) {
-                    sendHttp(ctx, INTERNAL_SERVER_ERROR, "Contact administrator about this error");
+                    sendHttp(
+                        ctx,
+                        INTERNAL_SERVER_ERROR,
+                        "Contact administrator about this error"
+                    );
                     throw new RuntimeException(e);
                 }
             }

@@ -7,8 +7,11 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.yomirein.sochatserver.media.Media;
 
@@ -93,6 +96,46 @@ public class SQLiteMediaRepository extends MediaRepository {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public List<String> checkForNonexistentIOIds(List<String> idList) {
+        if (idList == null || idList.isEmpty()) {
+            return List.of();
+        }
+
+        Set<String> existingIds = new HashSet<>(idList.size());
+        int batchSize = 500;
+
+        try (Connection connection = dataSource.getConnection()) {
+            for (int i = 0; i < idList.size(); i += batchSize) {
+                int end = Math.min(idList.size(), i + batchSize);
+                List<String> batch = idList.subList(i, end);
+
+                String placeholders = String.join(", ", Collections.nCopies(batch.size(), "?"));
+                String sql = "SELECT id FROM media WHERE id IN (" + placeholders + ")";
+
+                try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                    for (int j = 0; j < batch.size(); j++) {
+                        ps.setString(j + 1, batch.get(j));
+                    }
+                    try (ResultSet rs = ps.executeQuery()) {
+                        while (rs.next()) {
+                            existingIds.add(rs.getString("id"));
+                        }
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Database error while checking media IDs", e);
+        }
+
+        if (existingIds.size() == idList.size()) {
+            return List.of();
+        }
+        return idList.stream()
+            .filter(id -> !existingIds.contains(id))
+            .toList();
     }
 
     @Override

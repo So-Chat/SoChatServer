@@ -2,13 +2,16 @@ package org.yomirein.sochatserver.persistance.postgresql.repositories;
 
 import com.zaxxer.hikari.HikariDataSource;
 
+import java.sql.Array;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.yomirein.sochatserver.media.Media;
 
@@ -94,6 +97,40 @@ public class PostgresMediaRepository extends MediaRepository {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public List<String> checkForNonexistentIOIds(List<String> idList) {
+        if (idList == null || idList.isEmpty()) {
+            return List.of();
+        }
+
+        String sql = "SELECT id FROM media WHERE id = ANY(?)";
+        Set<String> existingIds = new HashSet<>(idList.size());
+
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql)) {
+
+            Array sqlArray = connection.createArrayOf("text", idList.toArray());
+            ps.setArray(1, sqlArray);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    existingIds.add(rs.getString("id"));
+                }
+            } finally {
+                sqlArray.free();
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        if (existingIds.size() == idList.size()) return List.of();
+
+        return idList.stream()
+            .filter(id -> !existingIds.contains(id))
+            .toList();
     }
 
     @Override

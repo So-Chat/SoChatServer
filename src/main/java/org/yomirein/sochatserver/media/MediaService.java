@@ -1,5 +1,6 @@
 package org.yomirein.sochatserver.media;
 
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -9,6 +10,9 @@ import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
+
+import javax.imageio.ImageIO;
 
 import org.apache.commons.io.FilenameUtils;
 import org.yomirein.sochatserver.users.User;
@@ -56,8 +60,6 @@ public class MediaService {
         return media;
     }
 
-
-    // I'm really trying to figure out how it works...
     public String saveUploadedFile(String token, FileUpload fileUpload, String nonce) throws MediaException, IOException {
         User user = userService.getUserByToken(token);
         String fileId = UUID.randomUUID().toString();
@@ -65,7 +67,13 @@ public class MediaService {
         String originalName = fileUpload.getFilename();
         String extension = FilenameUtils.getExtension(originalName);
 
-        String newFileName = fileId + "." + extension;
+        String newFileName;
+        if (nonce == null) {
+            newFileName = fileId + "." + extension;
+        }
+        else {
+            newFileName = fileId + ".bin";
+        }
 
         Media media = mediaRepository.save(
                 fileId,
@@ -103,32 +111,54 @@ public class MediaService {
         return mediaRepository.update(mediaId, messageId, null, null, null);
     }
 
-    public long getMediaFilesCount() {
-        long totalFiles;
+    public MediaBatch getMediaFilesId(int count, Path startAfter) throws IOException {
+        List<Path> paths;
 
         try (Stream<Path> stream = Files.walk(root)) {
-            totalFiles = stream
+            paths = stream
                 .filter(Files::isRegularFile)
-                .count();
+                .sorted()
+                .filter(path -> startAfter == null || path.compareTo(startAfter) > 0)
+                .limit(count)
+                .toList();
         }
-        return totalFiles;
+
+        List<String> ids = paths.stream()
+            .map(path -> path.getFileName().toString())
+            .toList();
+
+        Path lastPath = paths.isEmpty()
+            ? startAfter
+            : paths.get(paths.size() - 1);
+
+        return new MediaBatch(ids, lastPath);
     }
 
-    public List<String> getMediaFilesId(int count) {
-        List<String> mediaIds = new ArrayList<>(count);
+    public void cleanIoOprphanedMediaFiles() throws IOException {
+        Path cursor = null;
+        MediaBatch mBatch = getMediaFilesId(1000, cursor);
+        List<String> nonExistentIds = mediaRepository.checkForNonexistentIOIds(mBatch.ids());
+        for (String name : nonExistentIds) {
+            try (Stream<Path> paths = Files.walk(root)) {
+                Optional<Path> resultOpt = paths
+                    .filter(Files::isRegularFile)
+                    .filter(path -> {
+                        String fileName = path.getFileName().toString();
+                        int dot = fileName.lastIndexOf('.');
 
-        try (Stream<Path> paths = Files.walk(root)) {
-            paths
-                .filter(Files::isRegularFile)
-                .forEach(path -> {
-                    String fileId = extractFileId(path);
+                        String nameWithoutExtension =
+                            dot > 0 ? fileName.substring(0, dot) : fileName;
 
-                    if (fileId != null) {
-                        mediaIds.add(fileId);
-                    }
-                });
+                        return nameWithoutExtension.equals(name);
+                    })
+                    .findFirst();
+                if (resultOpt.isPresent()) {
+                    Path result = resultOpt.get();
+                    result.toFile().delete();
+                }
+            }
         }
-        return mediaId
+
     }
 
     public void deleteMedia(String mediaId) throws MediaException {
@@ -145,4 +175,29 @@ public class MediaService {
         folder.toFile().delete();
     }
 
+    public void validateImage(File file) throws MediaException {
+        try {
+            BufferedImage image = ImageIO.read(file);
+
+            if (image == null) {
+                throw new MediaException(
+                    HttpResponseStatus.BAD_REQUEST,
+                    "File is not an image"
+                );
+            }
+
+            if (image.getWidth() > 4096 || image.getHeight() > 4096) {
+                throw new MediaException(
+                    HttpResponseStatus.BAD_REQUEST,
+                    "Image dimensions are too large"
+                );
+            }
+
+        } catch (IOException e) {
+            throw new MediaException(
+                HttpResponseStatus.BAD_REQUEST,
+                "Invalid image"
+            );
+        }
+    }
 }
