@@ -119,7 +119,7 @@ public class PostgresUserRepository extends UserRepository {
         String avatarId
     ) {
         String sql =
-            "UPDATE users SET username = COALESCE(?, username), nickname = ?, description = ?, avatar_media_id = ?, WHERE id = ?";
+            "UPDATE users SET username = COALESCE(?, username), nickname = ?, description = ?, avatar_media_id = ? WHERE id = ?";
         try (Connection connection = dataSource.getConnection();
             PreparedStatement ps = connection.prepareStatement(sql))  {
             ps.setString(1, username);

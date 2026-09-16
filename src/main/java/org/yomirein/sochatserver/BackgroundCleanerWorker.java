@@ -45,6 +45,7 @@ public class BackgroundCleanerWorker {
             chatRepository.deleteOrphaned();
             messageRepository.deleteOrphaned();
             mediaRepository.deleteOrphaned();
+            // Cleaner does not clean IO media files
             try {
                 mediaService.cleanIoOprphanedMediaFiles();
             } catch (IOException e) {
