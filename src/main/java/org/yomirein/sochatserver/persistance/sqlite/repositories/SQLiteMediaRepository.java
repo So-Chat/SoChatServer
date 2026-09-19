@@ -42,9 +42,9 @@ public class SQLiteMediaRepository extends MediaRepository {
                             rs.getString("mime_type"),
                             rs.getString("file_name"),
                             rs.getLong("file_size"),
-                            rs.getObject("width", Integer.class),
-                            rs.getObject("height", Integer.class),
-                            rs.getObject("length", Integer.class),
+                            rs.getInt("width"),
+                            rs.getInt("height"),
+                            rs.getInt("length"),
                             rs.getString("nonce")
                     );
                     return Optional.of(media);

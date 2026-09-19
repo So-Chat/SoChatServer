@@ -341,7 +341,10 @@ public class ChatHandler {
         participants.stream()
                 .filter(p -> p.getUserId() != senderId)
                 .findFirst()
-                .ifPresent(p -> chat.setTitle(userService.getUser(p.getUserId()).getNickname()));
+                .ifPresent(p -> {
+                    chat.setTitle(userService.getUser(p.getUserId()).getNickname());
+                    chat.setAvatarId(userService.getUser(p.getUserId()).getAvatarId());
+                });
         return chat;
     }
 }

@@ -86,6 +86,9 @@ public class UsersHandler {
                     ? messagePacket.payload.get("avatar_id").asText()
                     : null;
 
+            System.out.println(messagePacket.getPayload().toString());
+            // {"nickname":"silver","username":"silver","description":"","avatar_id":"1ec6170b-0630-45ba-ac0f-bdd52ba3dc23","requestId":"1789763525637766-8"}
+            System.out.println(avatarId);
 
             userService.changeProfile(userId, username, nickname, description, avatarId);
             User user = userService.getUser(userId);

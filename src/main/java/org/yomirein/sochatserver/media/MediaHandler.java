@@ -104,6 +104,7 @@ public class MediaHandler {
             }
             if (file != null) {
                 try {
+                    // Need to make Avatar compress
                     if (isAvatar) { mediaService.validateImage(file.getFile()); }
 
                     String mediaId = mediaService.saveUploadedFile(token, file, nonce);

@@ -24,5 +24,7 @@ public class Chat {
     private SenderKey lastSenderKey;
     private Integer unreadMessagesCount;
 
+    private String avatarId;
+
     private CallState callState = CallState.IDLE;
 }

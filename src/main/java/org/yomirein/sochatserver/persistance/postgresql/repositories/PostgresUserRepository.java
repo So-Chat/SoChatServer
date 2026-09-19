@@ -124,8 +124,9 @@ public class PostgresUserRepository extends UserRepository {
             PreparedStatement ps = connection.prepareStatement(sql))  {
             ps.setString(1, username);
             ps.setString(2, nickname);
-            ps.setString(3, avatarId);
-            ps.setString(4, description);
+            ps.setString(3, description);
+            ps.setString(4, avatarId);
+
             ps.setLong(5, id);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
