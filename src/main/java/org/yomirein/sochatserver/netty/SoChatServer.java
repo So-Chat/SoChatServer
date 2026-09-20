@@ -10,11 +10,6 @@ import org.yomirein.sochatserver.chats.ChatHandler;
 import org.yomirein.sochatserver.friendship.FriendsHandler;
 import org.yomirein.sochatserver.media.MediaHandler;
 import org.yomirein.sochatserver.messages.MessageHandler;
-import org.yomirein.sochatserver.netty.codec.PacketDecoder;
-import org.yomirein.sochatserver.netty.codec.PacketEncoder;
-import org.yomirein.sochatserver.netty.handlers.HeartbeatHandler;
-import org.yomirein.sochatserver.netty.handlers.HttpPacketHandler;
-import org.yomirein.sochatserver.netty.handlers.PacketHandler;
 import org.yomirein.sochatserver.search.SearchHandler;
 import org.yomirein.sochatserver.sessions.SessionManager;
 import org.yomirein.sochatserver.users.UsersHandler;
@@ -29,26 +24,16 @@ import io.netty.channel.MultiThreadIoEventLoopGroup;
 import io.netty.channel.nio.NioIoHandler;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.codec.http.HttpMethod;
-import io.netty.handler.codec.http.HttpObjectAggregator;
-import io.netty.handler.codec.http.HttpServerCodec;
-import io.netty.handler.codec.http.cors.CorsConfig;
-import io.netty.handler.codec.http.cors.CorsConfigBuilder;
-import io.netty.handler.codec.http.cors.CorsHandler;
-import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
-import io.netty.handler.stream.ChunkedWriteHandler;
-import io.netty.handler.timeout.IdleStateHandler;
 import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
-public class HttpServer {
+public class SoChatServer {
 
-    // Imports from SoChat.java
+    private final int MAX_FRAME_SIZE = 65536;
     private final int port;
 
-    private final AuthService authService;
     private final CallService callService;
 
     private final SessionManager sessionManager;
@@ -62,23 +47,14 @@ public class HttpServer {
     private final CallHandler callHandler;
     private final SearchHandler searchHandler;
 
-    // Adding logger
     private final Logger logger = LoggerFactory.getLogger(HttpServer.class);
 
     public void run() throws Exception {
-        logger.info("Starting Http and WebSocket Server");
+        logger.info("Starting Server");
 
         // EventLoopGroups
         EventLoopGroup workerGroup = new MultiThreadIoEventLoopGroup(NioIoHandler.newFactory());
         EventLoopGroup bossGroup = new MultiThreadIoEventLoopGroup(NioIoHandler.newFactory());
-
-        CorsConfig corsConfig = CorsConfigBuilder.forAnyOrigin() //
-                // Allows all origins
-                .allowedRequestMethods(HttpMethod.GET, HttpMethod.POST, HttpMethod.PUT, HttpMethod.DELETE, HttpMethod.OPTIONS)
-                .allowCredentials() // To support cookies/credentials in the future
-                .allowedRequestHeaders("X-Requested-With", "Content-Type", "Content-Length") // Allowed client headers
-                .exposeHeaders("Content-Disposition") // Headers exposed to the client browser
-                .build();
 
         try {
             ServerBootstrap b = new ServerBootstrap();
@@ -93,30 +69,9 @@ public class HttpServer {
                         @Override
                         protected void initChannel(SocketChannel channel) throws Exception {
                             ChannelPipeline p = channel.pipeline();
-                            p.addLast(new LoggingHandler(LogLevel.TRACE));
+                            p.addLast(new LoggingHandler(LogLevel.DEBUG));
 
-                            // HTTP Server
-                            p.addLast(new HttpServerCodec());
-                            p.addLast(new HttpObjectAggregator(655369999));
-
-                            // WebSocket server protocol init
-                            p.addLast(new WebSocketServerProtocolHandler("/ws", null, true));
-
-                            // Heartbeat for low-level ping pongs
-                            p.addLast(new IdleStateHandler(0, 20, 0));
-                            p.addLast(new HeartbeatHandler(sessionManager));
-
-                            // Cors
-                            p.addLast(new CorsHandler(corsConfig));
-                            // HttpPacketHandler init
-                            p.addLast(new ChunkedWriteHandler());
-                            p.addLast(new HttpPacketHandler(mediaHandler));
-
-                            // WsPacketHandler init, with decoders and encoders
-                            p.addLast(new PacketDecoder());
-                            p.addLast(new PacketHandler(sessionManager, authHandler,
-                                    friendsHandler, usersHandler, chatHandler, messageHandler, callHandler, searchHandler, callService));
-                            p.addLast(new PacketEncoder());
+                            p.addLast(new ProtocolConfigurator(MAX_FRAME_SIZE, callService, sessionManager, authHandler, friendsHandler, usersHandler, chatHandler, messageHandler, mediaHandler, callHandler, searchHandler));
                         }
                     });
 

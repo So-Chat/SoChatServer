@@ -1,7 +1,5 @@
 package org.yomirein.sochatserver;
 
-import java.util.Map;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yomirein.sochatserver.auth.AuthHandler;
@@ -19,13 +17,12 @@ import org.yomirein.sochatserver.messages.MessageHandler;
 import org.yomirein.sochatserver.messages.MessageService;
 import org.yomirein.sochatserver.search.SearchHandler;
 import org.yomirein.sochatserver.search.SearchService;
-import org.yomirein.sochatserver.netty.HttpServer;
+import org.yomirein.sochatserver.netty.SoChatServer;
 import org.yomirein.sochatserver.sessions.SessionManager;
 import org.yomirein.sochatserver.test.TestService;
 import org.yomirein.sochatserver.persistance.api.repositories.*;
 import org.yomirein.sochatserver.users.UserService;
 import org.yomirein.sochatserver.users.UsersHandler;
-import org.yomirein.sochatserver.utils.ConfigReader;
 import org.yomirein.sochatserver.persistance.api.Database;
 
 import io.netty.util.internal.logging.InternalLoggerFactory;
@@ -70,7 +67,7 @@ public class SoChat {
         AuthService authService = new AuthService(challengeManager, userRepository);
 
         // Handlers initialization
-        AuthHandler authHandler = new AuthHandler(userService,sessionManager);
+        AuthHandler authHandler = new AuthHandler(userService,sessionManager, authService);
         FriendsHandler friendsHandler = new FriendsHandler(sessionManager, friendshipService, userService);
         UsersHandler userHandler = new UsersHandler(sessionManager, trustKeysRepository, userService);
         ChatHandler chatHandler = new ChatHandler(chatService, userService, messageService, callService, sessionManager);
@@ -80,13 +77,13 @@ public class SoChat {
         SearchHandler searchHandler = new SearchHandler(searchService);
 
         // Server initialization
-        HttpServer httpServer = new HttpServer(8081, authService, callService, sessionManager, authHandler, friendsHandler,
+        SoChatServer server = new SoChatServer(8081, callService, sessionManager, authHandler, friendsHandler,
                 userHandler, chatHandler, messageHandler, mediaHandler, callHandler, searchHandler);
 
         // Run everything
-        Thread httpServerThread = new Thread(() -> {
+        Thread serverThread = new Thread(() -> {
             try {
-                httpServer.run();
+                server.run();
             } catch (Exception e) {
                 LOGGER.error(e.getMessage());
             }
@@ -101,7 +98,7 @@ public class SoChat {
                 LOGGER.error(e.getMessage());
             }
         });
-        httpServerThread.start();
+        serverThread.start();
         testServiceThread.start();
     }
 }

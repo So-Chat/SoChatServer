@@ -26,7 +26,7 @@ import lombok.RequiredArgsConstructor;
 
 // WsPacketHandler.java handles everything except authentication xd
 @RequiredArgsConstructor
-public class WsPacketHandler extends SimpleChannelInboundHandler<MessagePacket> {
+public class PacketHandler extends SimpleChannelInboundHandler<MessagePacket> {
 
     Logger LOGGER = LoggerFactory.getLogger(this.getClass());
 
@@ -52,6 +52,11 @@ public class WsPacketHandler extends SimpleChannelInboundHandler<MessagePacket> 
             case "ping" -> ping(channelHandlerContext.channel());
             // Authentication
             case "authenticate" -> authHandler.authorize(channelHandlerContext, messagePacket);
+
+            case "auth_register" -> authHandler.register(channelHandlerContext, messagePacket);
+            case "auth_login" -> authHandler.login(channelHandlerContext, messagePacket);
+            case "auth_login_verify" -> authHandler.verify(channelHandlerContext, messagePacket);
+
             // FRIENDSHIP SERVICE
             case "friend_request" -> withAuth(channelHandlerContext, messagePacket, friendsHandler::requestSend);
             case "friend_accept" -> withAuth(channelHandlerContext, messagePacket, friendsHandler::requestAccept);
@@ -84,7 +89,7 @@ public class WsPacketHandler extends SimpleChannelInboundHandler<MessagePacket> 
 
             // CALLS MANAGEMENT
             case "call_offer" -> withAuth(channelHandlerContext, messagePacket, callHandler::call);
-          //case "call_accept" -> withAuth(channelHandlerContext, messagePacket, callHandler::acceptCall);
+        //case "call_accept" -> withAuth(channelHandlerContext, messagePacket, callHandler::acceptCall);
             case "call_check" -> withAuth(channelHandlerContext, messagePacket, callHandler::checkCall);
             case "call_answer" -> withAuth(channelHandlerContext, messagePacket, callHandler::answerRtc);
             case "call_ice" -> withAuth(channelHandlerContext, messagePacket, callHandler::iceRtc);
