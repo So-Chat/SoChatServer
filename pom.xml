@@ -94,6 +94,13 @@
             <version>1.5.32</version>
             <scope>compile</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk18on</artifactId>
+            <version>1.86</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 
     <build>

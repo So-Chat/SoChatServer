@@ -15,6 +15,8 @@ import org.yomirein.sochatserver.utils.JwtService;
 import static org.yomirein.sochatserver.utils.MessageSender.buildBaseResponse;
 import static org.yomirein.sochatserver.utils.MessageSender.sendError;
 
+import java.util.Objects;
+
 
 @RequiredArgsConstructor
 public class AuthHandler {
@@ -35,7 +37,7 @@ public class AuthHandler {
         }
 
         if (JwtService.isTokenValid(token)){
-            Session session = new Session(token, user, ctx.channel());
+            Session session = Objects.requireNonNullElse(sessionManager.getSession(ctx.channel()), new Session(token, user, ctx.channel()));
 
             sessionManager.addSession(
                     user,
@@ -91,6 +93,7 @@ public class AuthHandler {
         MessagePacket loginResponse = buildBaseResponse(messagePacket, "Login success")
                 .put("token", tokenString)
                 .build();
+
 
 
         // Send answer
