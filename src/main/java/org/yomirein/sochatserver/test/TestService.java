@@ -102,11 +102,11 @@ public class TestService {
     public void userDeletionTest() {
         User user1 = createTestUser();
         User user2 = createTestUser();
-        Friendship friendship = createFriendshipTest(user1, user2);
+        createFriendshipTest(user1, user2);
         Chat chat = createDirectChatTest(user2, user1);
 
-        Message messageFromUser1 = messageService.addMessage(user1.getId(), chat.getId(), "no ecryption here, my apologies", null, 1, List.<String>of());
-        Message messageFromUser2 = messageService.addMessage(user1.getId(), chat.getId(), "no ecryption here, my apologies #2", null, 1, List.<String>of());
+        messageService.addMessage(user1.getId(), chat.getId(), "no ecryption here, my apologies", null, 1, List.<String>of());
+        messageService.addMessage(user1.getId(), chat.getId(), "no ecryption here, my apologies #2", null, 1, List.<String>of());
 
         LOGGER.info("Friendship state: " + friendshipService.getByUserAndFriend(user1.getId(), user2.getId()));
         LOGGER.info("Chat state: " + chatService.getUserChats(user2.getId()));

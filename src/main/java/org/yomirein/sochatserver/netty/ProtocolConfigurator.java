@@ -17,6 +17,9 @@ import org.yomirein.sochatserver.media.MediaHandler;
 import org.yomirein.sochatserver.messages.MessageHandler;
 import org.yomirein.sochatserver.netty.codec.TcpPacketDecoder;
 import org.yomirein.sochatserver.netty.codec.TcpPacketEncoder;
+import org.yomirein.sochatserver.netty.codec.crypto.AesDecoder;
+import org.yomirein.sochatserver.netty.codec.crypto.AesEncoder;
+import org.yomirein.sochatserver.netty.handlers.HandshakeHandler;
 import org.yomirein.sochatserver.netty.handlers.HeartbeatHandler;
 import org.yomirein.sochatserver.netty.handlers.HttpPacketHandler;
 import org.yomirein.sochatserver.netty.handlers.PacketHandler;
@@ -25,6 +28,7 @@ import org.yomirein.sochatserver.sessions.SessionManager;
 import org.yomirein.sochatserver.users.UsersHandler;
 
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
+import io.netty.handler.codec.LengthFieldPrepender;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
@@ -110,19 +114,25 @@ public class ProtocolConfigurator extends ChannelInboundHandlerAdapter {
     }
 
     private void switchToTcp(ChannelHandlerContext channelHandlerContext) {
-            ChannelPipeline p = channelHandlerContext.pipeline();
+        ChannelPipeline p = channelHandlerContext.pipeline();
 
-            p.addLast("tcp-frame-decoder", new LengthFieldBasedFrameDecoder(MAX_FRAME_SIZE, 0, 4, 0, 4));
-            p.addLast(new LoggingHandler(LogLevel.DEBUG));
+        p.addLast(new LoggingHandler(LogLevel.DEBUG));
 
-            // Heartbeat for low-level ping pongs
-            p.addLast(new IdleStateHandler(0, 20, 0));
-            p.addLast(new HeartbeatHandler(sessionManager));
+        p.addLast(new LengthFieldPrepender(4));
 
-            // WsPacketHandler init, with decoders and encoders
-            p.addLast(new TcpPacketDecoder());
-            p.addLast(new PacketHandler(sessionManager, authHandler,
-                    friendsHandler, usersHandler, chatHandler, messageHandler, callHandler, searchHandler, callService));
-            p.addLast(new TcpPacketEncoder());
+        p.addLast(new HandshakeHandler(sessionManager));
+
+        p.addLast(new AesEncoder(sessionManager));
+        p.addLast(new TcpPacketEncoder());
+
+        p.addLast(new LengthFieldBasedFrameDecoder(MAX_FRAME_SIZE, 0, 4, 0, 4));
+
+        p.addLast(new AesDecoder(sessionManager));
+        p.addLast(new TcpPacketDecoder());
+
+        p.addLast(new IdleStateHandler(0, 20, 0));
+        p.addLast(new HeartbeatHandler(sessionManager));
+        p.addLast(new PacketHandler(sessionManager, authHandler,
+                friendsHandler, usersHandler, chatHandler, messageHandler, callHandler, searchHandler, callService));
     }
 }

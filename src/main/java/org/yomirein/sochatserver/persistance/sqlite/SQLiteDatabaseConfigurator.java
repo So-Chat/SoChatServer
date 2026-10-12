@@ -64,6 +64,8 @@ public class SQLiteDatabaseConfigurator extends DatabaseConfigurator<String> {
         cfg.addDataSourceProperty("busy_timeout", "5000");
         cfg.setConnectionInitSql("PRAGMA foreign_keys = ON");
 
+        cfg.setRegisterMbeans(true);
+
         return new HikariDataSource(cfg);
     }
 

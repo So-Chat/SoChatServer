@@ -88,7 +88,7 @@ public class MessageSender {
     }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MessageSender.class);
-    
+
     public static void handleError(ChannelHandlerContext ctx, MessagePacket packet, Exception e) {
         LOGGER.error("Caught an exception", e);
         sendError(ctx, packet, e.getMessage());
@@ -110,7 +110,7 @@ public class MessageSender {
 
     // Notify every connected user on specific account
     public static void notifyUser(User user, MessagePacket packet, SessionManager sessionManager) {
-        Set<Session> sessions = sessionManager.getUserSessions(user);
+        Set<Session> sessions = sessionManager.getUserSessions(user.getId());
         notifyUser(sessions, packet);
     }
     public static void notifyUser(Set<Session> sessions, MessagePacket packet) {

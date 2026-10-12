@@ -113,7 +113,7 @@ public class SQLiteMediaRepository extends MediaRepository {
                 List<String> batch = idList.subList(i, end);
 
                 String placeholders = String.join(", ", Collections.nCopies(batch.size(), "?"));
-                String sql = "SELECT id FROM media WHERE id IN (" + placeholders + ")";
+                String sql = "SELECT media_id FROM media WHERE media_id IN (" + placeholders + ")";
 
                 try (PreparedStatement ps = connection.prepareStatement(sql)) {
                     for (int j = 0; j < batch.size(); j++) {

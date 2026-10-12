@@ -117,7 +117,7 @@ public class UsersHandler {
     public void deleteUser(ChannelHandlerContext channelHandlerContext, MessagePacket messagePacket, Long userId) {
         try {
             User user = userService.getUser(userId);
-            Set<Session> userSessions = sessionManager.getUserSessions(user);
+            Set<Session> userSessions = sessionManager.getUserSessions(user.getId());
             userService.deleteUser(userId);
 
             MessagePacket answerPacket = new MessagePacket.Builder()

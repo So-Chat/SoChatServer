@@ -2,6 +2,7 @@ package org.yomirein.sochatserver.netty;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.yomirein.sochatserver.BackgroundCleanerWorker;
 import org.yomirein.sochatserver.auth.AuthHandler;
 import org.yomirein.sochatserver.auth.AuthService;
 import org.yomirein.sochatserver.calls.CallHandler;
@@ -47,6 +48,8 @@ public class SoChatServer {
     private final CallHandler callHandler;
     private final SearchHandler searchHandler;
 
+    private final BackgroundCleanerWorker backgroundCleanerWorker;
+
     private final Logger logger = LoggerFactory.getLogger(HttpServer.class);
 
     public void run() throws Exception {
@@ -78,6 +81,8 @@ public class SoChatServer {
             // Starting server
             ChannelFuture future = b.bind(port).sync();
             future.channel().closeFuture().sync();
+
+            backgroundCleanerWorker.run();
         }
         finally {
             workerGroup.shutdownGracefully();

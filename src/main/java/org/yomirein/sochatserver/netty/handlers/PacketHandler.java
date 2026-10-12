@@ -121,6 +121,7 @@ public class PacketHandler extends SimpleChannelInboundHandler<MessagePacket> {
             }
             userId = session.getUser().getId();
         }
+        System.out.println(userId);
 
         handler.handle(ctx, messagePacket, userId);
     }

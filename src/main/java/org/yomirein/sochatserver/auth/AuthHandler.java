@@ -37,13 +37,11 @@ public class AuthHandler {
         }
 
         if (JwtService.isTokenValid(token)){
-            Session session = Objects.requireNonNullElse(sessionManager.getSession(ctx.channel()), new Session(token, user, ctx.channel()));
+            Session session = sessionManager.getSession(ctx.channel());
 
-            sessionManager.addSession(
-                    user,
-                    ctx.channel(),
-                    session
-            );
+            sessionManager.bindUser(session, user.getId());
+            sessionManager.getSession(ctx.channel()).setToken(token);
+
             MessagePacket messagePacket1 = new MessagePacket.Builder()
                     .type(messagePacket.getType())
                     .put("success", true)

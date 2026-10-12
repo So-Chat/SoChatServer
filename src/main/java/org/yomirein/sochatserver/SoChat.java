@@ -76,9 +76,11 @@ public class SoChat {
         CallHandler callHandler = new CallHandler(callService, friendshipService, userService, chatService, sessionManager);
         SearchHandler searchHandler = new SearchHandler(searchService);
 
+        BackgroundCleanerWorker cleaner = new BackgroundCleanerWorker(database.getDataSource(), chatRepository, messageRepository, mediaRepository, mediaService);
+
         // Server initialization
         SoChatServer server = new SoChatServer(8081, callService, sessionManager, authHandler, friendsHandler,
-                userHandler, chatHandler, messageHandler, mediaHandler, callHandler, searchHandler);
+                userHandler, chatHandler, messageHandler, mediaHandler, callHandler, searchHandler, cleaner);
 
         // Run everything
         Thread serverThread = new Thread(() -> {

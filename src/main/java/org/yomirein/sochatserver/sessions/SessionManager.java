@@ -15,28 +15,49 @@ public class SessionManager {
     private final Map<Long, Set<Session>> sessionsByUser = new ConcurrentHashMap<>();
     private final Map<ChannelId, Session> sessionByChannel = new ConcurrentHashMap<>();
 
+    private final Map<Session, Long> userBySession = new ConcurrentHashMap<>();
+
     // Adding session, for sessionByChannel just putting session within channel(netty) id
     // for sessionsByUser we put session with userId on key
-    public void addSession(User user, Channel channel, Session session) {
+    public void addSession(Channel channel, Session session) {
         session.setChannel(channel);
         sessionByChannel.put(channel.id(), session);
+    }
+
+    public void bindUser(Session session, long userId) {
+        unbindUser(session);
+
         sessionsByUser
-                .computeIfAbsent(user.getId(), k -> ConcurrentHashMap.newKeySet())
-                .add(session);
+            .computeIfAbsent(userId, k -> ConcurrentHashMap.newKeySet())
+            .add(session);
+
+        userBySession.put(session, userId);
+    }
+    public void unbindUser(Session session) {
+        Long userId = userBySession.remove(session);
+
+        if (userId == null) {
+            return;
+        }
+
+        Set<Session> sessions = sessionsByUser.get(userId);
+
+        if (sessions != null) {
+            sessions.remove(session);
+
+            if (sessions.isEmpty()) {
+                sessionsByUser.remove(userId, sessions);
+            }
+        }
     }
 
     // For remove session we use our sessionByChannel and sessionByUser for full
     // removing on two maps and many if's brrr
     public void removeSession(Channel channel) {
         Session session = sessionByChannel.remove(channel.id());
+
         if (session != null) {
-            Set<Session> set = sessionsByUser.get(session.getUser().getId());
-            if (set != null) {
-                set.remove(session);
-                if (set.isEmpty()) {
-                    sessionsByUser.remove(session.getUser().getId());
-                }
-            }
+            unbindUser(session);
         }
     }
 
