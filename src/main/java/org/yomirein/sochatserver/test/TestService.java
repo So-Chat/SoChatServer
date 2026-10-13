@@ -20,7 +20,6 @@ import org.yomirein.sochatserver.chats.ChatService;
 import org.yomirein.sochatserver.chats.ChatType;
 import org.yomirein.sochatserver.friendship.Friendship;
 import org.yomirein.sochatserver.friendship.FriendshipService;
-import org.yomirein.sochatserver.messages.Message;
 import org.yomirein.sochatserver.messages.MessageService;
 import org.yomirein.sochatserver.persistance.api.repositories.ChatRepository;
 import org.yomirein.sochatserver.persistance.api.repositories.MessageRepository;

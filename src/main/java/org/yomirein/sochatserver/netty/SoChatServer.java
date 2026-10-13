@@ -4,7 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yomirein.sochatserver.BackgroundCleanerWorker;
 import org.yomirein.sochatserver.auth.AuthHandler;
-import org.yomirein.sochatserver.auth.AuthService;
 import org.yomirein.sochatserver.calls.CallHandler;
 import org.yomirein.sochatserver.calls.CallService;
 import org.yomirein.sochatserver.chats.ChatHandler;

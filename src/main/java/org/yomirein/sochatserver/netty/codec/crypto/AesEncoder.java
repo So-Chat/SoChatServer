@@ -24,10 +24,7 @@ public class AesEncoder extends MessageToByteEncoder<ByteBuf> {
         Session session = sessionManager.getSession(ctx.channel());
         byte[] encodedBytes = CryptoService.encrypt(secureRandom, session.getAesKey(), bytes);
 
-        ByteBuf encryptedBuf = ctx.alloc().buffer(encodedBytes.length);
-        encryptedBuf.writeBytes(encodedBytes);
-
-        out.writeBytes(encryptedBuf);
+        out.writeBytes(encodedBytes);
     }
 
 }

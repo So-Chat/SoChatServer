@@ -15,8 +15,6 @@ import org.yomirein.sochatserver.utils.JwtService;
 import static org.yomirein.sochatserver.utils.MessageSender.buildBaseResponse;
 import static org.yomirein.sochatserver.utils.MessageSender.sendError;
 
-import java.util.Objects;
-
 
 @RequiredArgsConstructor
 public class AuthHandler {
@@ -39,7 +37,7 @@ public class AuthHandler {
         if (JwtService.isTokenValid(token)){
             Session session = sessionManager.getSession(ctx.channel());
 
-            sessionManager.bindUser(session, user.getId());
+            sessionManager.bindUser(session, user);
             sessionManager.getSession(ctx.channel()).setToken(token);
 
             MessagePacket messagePacket1 = new MessagePacket.Builder()

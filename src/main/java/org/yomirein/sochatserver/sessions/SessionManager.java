@@ -24,17 +24,19 @@ public class SessionManager {
         sessionByChannel.put(channel.id(), session);
     }
 
-    public void bindUser(Session session, long userId) {
+    public void bindUser(Session session, User user) {
         unbindUser(session);
 
+        session.setUser(user);
         sessionsByUser
-            .computeIfAbsent(userId, k -> ConcurrentHashMap.newKeySet())
+            .computeIfAbsent(user.getId(), k -> ConcurrentHashMap.newKeySet())
             .add(session);
 
-        userBySession.put(session, userId);
+        userBySession.put(session, user.getId());
     }
     public void unbindUser(Session session) {
         Long userId = userBySession.remove(session);
+        session.setUser(null);
 
         if (userId == null) {
             return;

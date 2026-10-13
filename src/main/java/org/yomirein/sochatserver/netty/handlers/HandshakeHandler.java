@@ -1,6 +1,5 @@
 package org.yomirein.sochatserver.netty.handlers;
 
-import java.util.Arrays;
 import java.util.List;
 
 import org.yomirein.sochatserver.netty.codec.crypto.CryptoService;
