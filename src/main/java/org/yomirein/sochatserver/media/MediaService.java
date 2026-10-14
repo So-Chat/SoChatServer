@@ -27,7 +27,7 @@ import org.yomirein.sochatserver.persistance.api.repositories.MediaRepository;
 @AllArgsConstructor
 public class MediaService {
 
-    private final Path root = Paths.get("uploads").toAbsolutePath().normalize();
+    private static final Path root = Paths.get("uploads").toAbsolutePath().normalize();
     private final MediaRepository mediaRepository;
 
     private final UserService userService;

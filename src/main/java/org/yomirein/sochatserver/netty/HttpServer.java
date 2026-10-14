@@ -3,7 +3,6 @@ package org.yomirein.sochatserver.netty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yomirein.sochatserver.auth.AuthHandler;
-import org.yomirein.sochatserver.auth.AuthService;
 import org.yomirein.sochatserver.calls.CallHandler;
 import org.yomirein.sochatserver.calls.CallService;
 import org.yomirein.sochatserver.chats.ChatHandler;
@@ -40,30 +39,23 @@ import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.handler.timeout.IdleStateHandler;
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
-public class HttpServer {
-
-    // Imports from SoChat.java
-    private final int port;
-
-    private final AuthService authService;
-    private final CallService callService;
-
-    private final SessionManager sessionManager;
-
-    private final AuthHandler authHandler;
-    private final FriendsHandler friendsHandler;
-    private final UsersHandler usersHandler;
-    private final ChatHandler chatHandler;
-    private final MessageHandler messageHandler;
-    private final MediaHandler mediaHandler;
-    private final CallHandler callHandler;
-    private final SearchHandler searchHandler;
+public record HttpServer (
+    int port,
+    CallService callService,
+    SessionManager sessionManager,
+    AuthHandler authHandler,
+    FriendsHandler friendsHandler,
+    UsersHandler usersHandler,
+    ChatHandler chatHandler,
+    MessageHandler messageHandler,
+    MediaHandler mediaHandler,
+    CallHandler callHandler,
+    SearchHandler searchHandler
+) {
 
     // Adding logger
-    private final Logger logger = LoggerFactory.getLogger(HttpServer.class);
+    private static final Logger logger = LoggerFactory.getLogger(HttpServer.class);
 
     public void run() throws Exception {
         logger.info("Starting Http and WebSocket Server");

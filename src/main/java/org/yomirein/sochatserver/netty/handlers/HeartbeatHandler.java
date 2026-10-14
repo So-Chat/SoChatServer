@@ -8,10 +8,9 @@ import io.netty.handler.codec.http.websocketx.PingWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.PongWebSocketFrame;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
-import lombok.RequiredArgsConstructor;
+import lombok.AllArgsConstructor;;
 
-
-@RequiredArgsConstructor
+@AllArgsConstructor
 public class HeartbeatHandler extends ChannelInboundHandlerAdapter {
 
     private final SessionManager sessionManager;

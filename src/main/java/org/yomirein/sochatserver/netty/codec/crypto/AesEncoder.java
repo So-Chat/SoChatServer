@@ -14,7 +14,7 @@ import lombok.RequiredArgsConstructor;
 public class AesEncoder extends MessageToByteEncoder<ByteBuf> {
 
     private final SessionManager sessionManager;
-    private final SecureRandom secureRandom = new SecureRandom();
+    private static final SecureRandom secureRandom = new SecureRandom();
 
     @Override
     protected void encode(ChannelHandlerContext ctx, ByteBuf msg, ByteBuf out) throws Exception {

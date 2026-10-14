@@ -56,7 +56,7 @@ public class ProtocolConfigurator extends ChannelInboundHandlerAdapter {
     private final CallHandler callHandler;
     private final SearchHandler searchHandler;
 
-    private final CorsConfig corsConfig = CorsConfigBuilder.forAnyOrigin()
+    private static final CorsConfig corsConfig = CorsConfigBuilder.forAnyOrigin()
         // Allows all origins
         .allowedRequestMethods(HttpMethod.GET, HttpMethod.POST, HttpMethod.PUT, HttpMethod.DELETE, HttpMethod.OPTIONS)
         .allowCredentials() // To support cookies/credentials in the future

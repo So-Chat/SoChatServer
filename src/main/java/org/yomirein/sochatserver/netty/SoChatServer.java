@@ -26,30 +26,23 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
-public class SoChatServer {
-
-    private final int MAX_FRAME_SIZE = 65536;
-    private final int port;
-
-    private final CallService callService;
-
-    private final SessionManager sessionManager;
-
-    private final AuthHandler authHandler;
-    private final FriendsHandler friendsHandler;
-    private final UsersHandler usersHandler;
-    private final ChatHandler chatHandler;
-    private final MessageHandler messageHandler;
-    private final MediaHandler mediaHandler;
-    private final CallHandler callHandler;
-    private final SearchHandler searchHandler;
-
-    private final BackgroundCleanerWorker backgroundCleanerWorker;
-
-    private final Logger logger = LoggerFactory.getLogger(HttpServer.class);
+public record SoChatServer(
+    int port,
+    CallService callService,
+    SessionManager sessionManager,
+    AuthHandler authHandler,
+    FriendsHandler friendsHandler,
+    UsersHandler usersHandler,
+    ChatHandler chatHandler,
+    MessageHandler messageHandler,
+    MediaHandler mediaHandler,
+    CallHandler callHandler,
+    SearchHandler searchHandler,
+    BackgroundCleanerWorker backgroundCleanerWorker
+) {
+    private static final int MAX_FRAME_SIZE = 65536;
+    private static final Logger logger = LoggerFactory.getLogger(SoChatServer.class);
 
     public void run() throws Exception {
         logger.info("Starting Server");
