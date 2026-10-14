@@ -12,10 +12,9 @@ public class TcpPacketEncoder extends MessageToByteEncoder<MessagePacket> {
 
     @Override
     protected void encode(ChannelHandlerContext channelHandlerContext, MessagePacket messagePacket, ByteBuf byteBuf) throws Exception {
-        // Mapping our packet to bytes
         byte[] bytes = MAPPER.writeValueAsBytes(messagePacket);
 
-        // Writing converted packed itself
         byteBuf.writeBytes(bytes);
+        byteBuf.writeInt(messagePacket.getRequestId());
     }
 }

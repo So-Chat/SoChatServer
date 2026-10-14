@@ -40,12 +40,9 @@ public class AuthHandler {
             sessionManager.bindUser(session, user);
             sessionManager.getSession(ctx.channel()).setToken(token);
 
-            MessagePacket messagePacket1 = new MessagePacket.Builder()
-                    .type(messagePacket.getType())
-                    .put("success", true)
-                    .put("user", JsonConfig.MAPPER.writeValueAsString(user))
-                    .put("requestId", messagePacket.getPayload().get("requestId").asText())
-                    .build();
+            MessagePacket messagePacket1 = buildBaseResponse(messagePacket, null)
+                .put("user", JsonConfig.MAPPER.writeValueAsString(user))
+                .build();
 
             ctx.channel().writeAndFlush(messagePacket1);
         }

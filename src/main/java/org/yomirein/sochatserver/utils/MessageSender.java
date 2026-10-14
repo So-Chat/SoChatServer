@@ -68,21 +68,13 @@ public class MessageSender {
                                  MessagePacket request,
                                  String errorMessage) {
         MessagePacket packet;
-        if (request.getPayload().get("requestId") != null) {
-            packet = new MessagePacket.Builder()
-                    .type(request.getType())
-                    .put("success", false)
-                    .put("requestId", request.getPayload().get("requestId").asText())
-                    .put("server_message", errorMessage)
-                    .build();
-        }
-        else {
-             packet = new MessagePacket.Builder()
-                    .type(request.getType())
-                    .put("success", false)
-                    .put("server_message", errorMessage)
-                    .build();
-        }
+        packet = new MessagePacket.Builder()
+                .type(request.getType())
+                .requestId(request.requestId)
+                .put("success", false)
+                .put("server_message", errorMessage)
+                .build();
+
 
         ctx.channel().writeAndFlush(packet);
     }
@@ -96,15 +88,10 @@ public class MessageSender {
 
     // Generate simple response
     public static MessagePacket.Builder buildBaseResponse(MessagePacket request, String message) {
-        if (request.getPayload().get("requestId") != null) {
-            return new MessagePacket.Builder()
-                    .type(request.getType())
-                    .put("success", true)
-                    .put("requestId", request.getPayload().get("requestId").asText())
-                    .put("server_message", message);
-        }
         return new MessagePacket.Builder()
                 .type(request.getType())
+                .requestId(request.getRequestId())
+                .put("success", true)
                 .put("server_message", message);
     }
 

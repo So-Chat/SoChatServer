@@ -29,13 +29,7 @@ public class FriendsHandler {
             User user = userService.getUser(userId);
 
             if (toUser == user){
-                MessagePacket answerPacket = new MessagePacket.Builder()
-                        .type(messagePacket.getType())
-                        .put("success", false)
-                        .put("requestId", messagePacket.getPayload().get("requestId").asText())
-                        .put("server_message", "You can't add yourself to friends")
-                        .build();
-                channelHandlerContext.channel().writeAndFlush(answerPacket);
+                sendError(channelHandlerContext, messagePacket, "You can't add yourself to friends");
                 return;
             }
 

@@ -1,7 +1,9 @@
 package org.yomirein.sochatserver.netty.codec;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.CorruptedFrameException;
 import io.netty.handler.codec.MessageToMessageDecoder;
 import org.yomirein.sochatserver.common.models.MessagePacket;
 
@@ -13,12 +15,20 @@ public class TcpPacketDecoder extends MessageToMessageDecoder<ByteBuf> {
 
     @Override
     protected void decode(ChannelHandlerContext channelHandlerContext, ByteBuf byteBuf, List<Object> list) throws Exception {
-        // Getting Bytes from received message and let bytebuf read it
-        byte[] bytes = new byte[byteBuf.readableBytes()];
-        byteBuf.readBytes(bytes);
+        if (byteBuf.readableBytes() < 4) {
+            throw new CorruptedFrameException("Packet too short");
+        }
 
-        // Making packet from bytes and pass it to next handler for work
-        MessagePacket packet = MAPPER.readValue(bytes, MessagePacket.class);
+        int payloadLength = byteBuf.readableBytes() - 4;
+
+        ByteBuf payload = byteBuf.readSlice(payloadLength);
+        int requestId = byteBuf.readInt();
+
+        MessagePacket packet = MAPPER.readValue(
+                ByteBufUtil.getBytes(payload),
+                MessagePacket.class
+        );
+        packet.setRequestId(requestId);
         list.add(packet);
     }
 }

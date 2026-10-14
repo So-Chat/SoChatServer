@@ -18,24 +18,29 @@ public class HandshakeHandler extends ByteToMessageDecoder {
 
     @Override
     protected void decode(ChannelHandlerContext channelHandlerContext, ByteBuf byteBuf, List<Object> list) throws Exception {
+        if (byteBuf.readableBytes() < 36) {
+            return;
+        }
 
-        int length = byteBuf.readableBytes() - 4;
-        byte[] bytes = new byte[length];
+        int payloadLength = byteBuf.readableBytes() - Integer.BYTES;
 
-        byteBuf.skipBytes(4);
-        byteBuf.readBytes(bytes);
+        byte[] publicKey = new byte[payloadLength];
+        byteBuf.readBytes(publicKey);
 
-        byte[][] keys = CryptoService.handshake(bytes);
+        int requestId = byteBuf.readInt();
 
-        ByteBuf responseBuf = channelHandlerContext.alloc().buffer(32);
-        responseBuf.writeBytes(keys[0]);
+        byte[][] keys = CryptoService.handshake(publicKey);
 
         Session session = new Session(channelHandlerContext.channel());
         session.setAesKey(keys[1]);
 
         sessionManager.addSession(channelHandlerContext.channel(), session);
 
-        channelHandlerContext.writeAndFlush(responseBuf);
+        ByteBuf response = channelHandlerContext.alloc().buffer(36);
+        response.writeBytes(keys[0]);
+        response.writeInt(requestId);
+
+        channelHandlerContext.writeAndFlush(response);
 
         channelHandlerContext.pipeline().remove(this);
     }

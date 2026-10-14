@@ -118,14 +118,13 @@ public class ProtocolConfigurator extends ChannelInboundHandlerAdapter {
 
         p.addLast(new LoggingHandler(LogLevel.DEBUG));
 
+        p.addLast(new LengthFieldBasedFrameDecoder(MAX_FRAME_SIZE, 0, 4, 0, 4));
         p.addLast(new LengthFieldPrepender(4));
 
         p.addLast(new HandshakeHandler(sessionManager));
 
         p.addLast(new AesEncoder(sessionManager));
         p.addLast(new TcpPacketEncoder());
-
-        p.addLast(new LengthFieldBasedFrameDecoder(MAX_FRAME_SIZE, 0, 4, 0, 4));
 
         p.addLast(new AesDecoder(sessionManager));
         p.addLast(new TcpPacketDecoder());
