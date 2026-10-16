@@ -38,15 +38,25 @@ public class MediaService {
         }
 
         String mediaId = Paths.get(uri).getFileName().toString();
-        Media media = mediaRepository.findById(mediaId).orElseThrow(() -> new MediaException(HttpResponseStatus.NOT_FOUND, "Not found"));
+        System.out.println("[media] Requested ID: " + mediaId);
+
+        Media media = mediaRepository.findById(mediaId)
+                .orElseThrow(() -> {
+                    System.out.println("[media] Not found in DB: " + mediaId);
+                    return new MediaException(HttpResponseStatus.NOT_FOUND, "Not found");
+                });
 
         String dir1 = media.getMediaId().substring(0, 2);
         String dir2 = media.getMediaId().substring(2, 4);
 
-        String extension = "";
-        int dotIndex = media.getFileName().lastIndexOf('.');
-        if (dotIndex >= 0) {
-            extension = media.getFileName().substring(dotIndex);
+        String extension;
+        if (media.getNonce() != null) {
+            extension = ".bin";
+        } else {
+            int dotIndex = media.getFileName().lastIndexOf('.');
+            extension = dotIndex >= 0
+                    ? media.getFileName().substring(dotIndex)
+                    : "";
         }
 
         Path requested = root.resolve(dir1, dir2, media.getMediaId() + extension).normalize();
@@ -55,8 +65,8 @@ public class MediaService {
         if (!file.exists() || !file.isFile()) {
             throw new MediaException(HttpResponseStatus.NOT_FOUND, "File not found");
         }
-        media.setFile(file);
 
+        media.setFile(file);
         return media;
     }
 

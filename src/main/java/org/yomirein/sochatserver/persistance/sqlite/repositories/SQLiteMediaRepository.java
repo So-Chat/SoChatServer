@@ -156,9 +156,9 @@ public class SQLiteMediaRepository extends MediaRepository {
                             rs.getString("mime_type"),
                             rs.getString("file_name"),
                             rs.getLong("file_size"),
-                            rs.getObject("width", Integer.class),
-                            rs.getObject("height", Integer.class),
-                            rs.getObject("length", Integer.class),
+                            getNullableInt(rs, "width"),
+                            getNullableInt(rs, "height"),
+                            getNullableInt(rs, "length"),
                             rs.getString("nonce")
                     );
 
@@ -214,4 +214,16 @@ public class SQLiteMediaRepository extends MediaRepository {
             throw new RuntimeException(e);
         }
     }
+
+    private Integer getNullableInt(ResultSet rs, String column)
+            throws SQLException {
+        Object value = rs.getObject(column);
+
+        if (value == null) {
+            return null;
+        }
+
+        return ((Number) value).intValue();
+    }
+
 }
