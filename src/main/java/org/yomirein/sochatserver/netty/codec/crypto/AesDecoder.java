@@ -15,7 +15,7 @@ public class AesDecoder extends ByteToMessageDecoder {
 
     private final SessionManager sessionManager;
 
-@Override
+    @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf msg, List<Object> out) throws Exception {
         byte[] bytes = new byte[msg.readableBytes()];
         msg.readBytes(bytes);

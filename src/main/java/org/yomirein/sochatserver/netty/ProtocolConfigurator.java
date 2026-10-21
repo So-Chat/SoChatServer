@@ -35,7 +35,6 @@ import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.http.cors.CorsConfig;
 import io.netty.handler.codec.http.cors.CorsConfigBuilder;
 import io.netty.handler.codec.http.cors.CorsHandler;
-import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import io.netty.handler.timeout.IdleStateHandler;
 
 @AllArgsConstructor
@@ -99,13 +98,6 @@ public class ProtocolConfigurator extends ChannelInboundHandlerAdapter {
         p.addLast(new HttpServerCodec());
         p.addLast(new HttpObjectAggregator(655369999));
 
-        // WebSocket server protocol init
-        p.addLast(new WebSocketServerProtocolHandler("/ws", null, true));
-
-        // Heartbeat for low-level ping pongs
-        p.addLast(new IdleStateHandler(0, 20, 0));
-        p.addLast(new HeartbeatHandler(sessionManager));
-
         // Cors
         p.addLast(new CorsHandler(corsConfig));
         // HttpPacketHandler init
@@ -113,6 +105,12 @@ public class ProtocolConfigurator extends ChannelInboundHandlerAdapter {
         p.addLast(new HttpPacketHandler(mediaHandler));
     }
 
+    /*
+        Encrypted packets have headers
+        0x01 - Ping
+        0x02 - Pong
+        0x03 - Full json packet
+    */
     private void switchToTcp(ChannelHandlerContext channelHandlerContext) {
         ChannelPipeline p = channelHandlerContext.pipeline();
 
@@ -124,13 +122,15 @@ public class ProtocolConfigurator extends ChannelInboundHandlerAdapter {
         p.addLast(new HandshakeHandler(sessionManager));
 
         p.addLast(new AesEncoder(sessionManager));
+
+        p.addLast(new IdleStateHandler(0, 20, 0));
+        p.addLast(new HeartbeatHandler(sessionManager));
+        
         p.addLast(new TcpPacketEncoder());
 
         p.addLast(new AesDecoder(sessionManager));
         p.addLast(new TcpPacketDecoder());
-
-        p.addLast(new IdleStateHandler(0, 20, 0));
-        p.addLast(new HeartbeatHandler(sessionManager));
+        
         p.addLast(new PacketHandler(sessionManager, authHandler,
                 friendsHandler, usersHandler, chatHandler, messageHandler, callHandler, searchHandler, callService));
     }

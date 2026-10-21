@@ -38,11 +38,9 @@ public class MediaService {
         }
 
         String mediaId = Paths.get(uri).getFileName().toString();
-        System.out.println("[media] Requested ID: " + mediaId);
 
         Media media = mediaRepository.findById(mediaId)
                 .orElseThrow(() -> {
-                    System.out.println("[media] Not found in DB: " + mediaId);
                     return new MediaException(HttpResponseStatus.NOT_FOUND, "Not found");
                 });
 

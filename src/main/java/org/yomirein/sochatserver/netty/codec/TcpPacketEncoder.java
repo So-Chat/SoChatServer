@@ -14,6 +14,9 @@ public class TcpPacketEncoder extends MessageToByteEncoder<MessagePacket> {
     protected void encode(ChannelHandlerContext channelHandlerContext, MessagePacket messagePacket, ByteBuf byteBuf) throws Exception {
         byte[] bytes = MAPPER.writeValueAsBytes(messagePacket);
 
+        // Write packetId for full json(0x03)
+        byteBuf.writeByte(0x03);
+
         byteBuf.writeBytes(bytes);
         byteBuf.writeInt(messagePacket.getRequestId());
     }
