@@ -105,7 +105,7 @@ public class PostgresMediaRepository extends MediaRepository {
             return List.of();
         }
 
-        String sql = "SELECT id FROM media WHERE id = ANY(?)";
+        String sql = "SELECT media_id FROM media WHERE media_id = ANY(?)";
         Set<String> existingIds = new HashSet<>(idList.size());
 
         try (Connection connection = dataSource.getConnection();

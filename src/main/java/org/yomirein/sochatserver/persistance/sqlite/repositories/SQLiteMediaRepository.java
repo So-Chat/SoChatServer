@@ -113,7 +113,7 @@ public class SQLiteMediaRepository extends MediaRepository {
                 List<String> batch = idList.subList(i, end);
 
                 String placeholders = String.join(", ", Collections.nCopies(batch.size(), "?"));
-                String sql = "SELECT id FROM media WHERE id IN (" + placeholders + ")";
+                String sql = "SELECT media_id FROM media WHERE media_id IN (" + placeholders + ")";
 
                 try (PreparedStatement ps = connection.prepareStatement(sql)) {
                     for (int j = 0; j < batch.size(); j++) {
@@ -156,9 +156,9 @@ public class SQLiteMediaRepository extends MediaRepository {
                             rs.getString("mime_type"),
                             rs.getString("file_name"),
                             rs.getLong("file_size"),
-                            rs.getObject("width", Integer.class),
-                            rs.getObject("height", Integer.class),
-                            rs.getObject("length", Integer.class),
+                            getNullableInt(rs, "width"),
+                            getNullableInt(rs, "height"),
+                            getNullableInt(rs, "length"),
                             rs.getString("nonce")
                     );
 
@@ -214,4 +214,16 @@ public class SQLiteMediaRepository extends MediaRepository {
             throw new RuntimeException(e);
         }
     }
+
+    private Integer getNullableInt(ResultSet rs, String column)
+            throws SQLException {
+        Object value = rs.getObject(column);
+
+        if (value == null) {
+            return null;
+        }
+
+        return ((Number) value).intValue();
+    }
+
 }

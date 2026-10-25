@@ -2,6 +2,7 @@ package org.yomirein.sochatserver.common.models;
 
 import org.yomirein.sochatserver.utils.JsonConfig;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -9,6 +10,9 @@ import lombok.Getter;
 import lombok.Setter;
 
 public class MessagePacket {
+    @Getter @Setter
+    @JsonIgnore
+    public int requestId = 0;
     @Getter @Setter
     public String type;
     @Getter @Setter
@@ -23,7 +27,19 @@ public class MessagePacket {
         this.payload = JsonConfig.MAPPER.createObjectNode();
     }
 
+    public MessagePacket(int requestId, String type) {
+        this.requestId = requestId;
+        this.type = type;
+        this.payload = JsonConfig.MAPPER.createObjectNode();
+    }
+
     public MessagePacket(String type, ObjectNode payload){
+        this.type = type;
+        this.payload = payload;
+    }
+
+    public MessagePacket(int requestId, String type, ObjectNode payload){
+        this.requestId = requestId;
         this.type = type;
         this.payload = payload;
     }
@@ -31,10 +47,16 @@ public class MessagePacket {
     public static class Builder {
 
         private String type;
+        private int requestId;
         private final ObjectNode payload = JsonConfig.MAPPER.createObjectNode();
 
         public Builder type(String type) {
             this.type = type;
+            return this;
+        }
+
+        public Builder requestId(int requestId) {
+            this.requestId = requestId;
             return this;
         }
 
@@ -68,10 +90,7 @@ public class MessagePacket {
         }
 
         public MessagePacket build() {
-            return new MessagePacket(type, payload);
+            return new MessagePacket(requestId, type, payload);
         }
-
-
-
     }
 }

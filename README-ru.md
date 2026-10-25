@@ -44,7 +44,7 @@ __SoChat позволяет пользователям создавать и у�
 - Maven
 - Java 23+
 - Git
-- PostgreSQL (SQLite support planned)
+- (Опционально) PostgreSQL
 ### Клонируйте репозиторий
 ```bash 
 git clone https://github.com/So-Chat/SoChatServer.git

@@ -4,15 +4,13 @@ import java.util.List;
 
 import org.yomirein.sochatserver.messages.Message;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class Chat {
     private long id;
     private String title;

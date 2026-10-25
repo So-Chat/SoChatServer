@@ -4,6 +4,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 import org.yomirein.sochatserver.friendship.Friendship;
 import org.yomirein.sochatserver.friendship.FriendshipStatus;
@@ -45,7 +47,9 @@ public class Mappers {
         m.setContent(rs.getString("content"));
         long timestamp = rs.getLong("timestamp");
         Timestamp ts = Timestamp.from(Instant.ofEpochSecond(timestamp));
-        if (ts != null) m.setTimestamp(ts.toLocalDateTime());
+        if (ts != null) m.setTimestamp(
+            LocalDateTime.ofInstant(Instant.ofEpochSecond(timestamp), ZoneOffset.UTC)
+        );
         return m;
     }
 

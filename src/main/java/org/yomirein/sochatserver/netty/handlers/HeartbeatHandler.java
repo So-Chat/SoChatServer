@@ -1,44 +1,64 @@
 package org.yomirein.sochatserver.netty.handlers;
 
+import java.util.List;
+
 import org.yomirein.sochatserver.sessions.SessionManager;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.handler.codec.http.websocketx.PingWebSocketFrame;
-import io.netty.handler.codec.http.websocketx.PongWebSocketFrame;
+import io.netty.handler.codec.MessageToMessageDecoder;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
-import lombok.RequiredArgsConstructor;
+import lombok.AllArgsConstructor;;
 
-
-@RequiredArgsConstructor
-public class HeartbeatHandler extends ChannelInboundHandlerAdapter {
+@AllArgsConstructor
+public class HeartbeatHandler extends MessageToMessageDecoder<ByteBuf> {
 
     private final SessionManager sessionManager;
+    /*
+        0x01 - Ping
+        0x02 - Pong
+    */
+    @Override
+    public boolean acceptInboundMessage(Object msg) throws Exception {
+        if (!(msg instanceof ByteBuf buf) || !buf.isReadable()) {
+            return false;
+        }
+        byte packetId = buf.getByte(buf.readerIndex());
+
+        return packetId == 0x01 || packetId == 0x02;
+    }
 
     @Override
-    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
-        if (evt instanceof IdleStateEvent e) {
-
-            if (e.state() == IdleState.WRITER_IDLE) {
-                ctx.writeAndFlush(new PingWebSocketFrame());
+    protected void decode(ChannelHandlerContext channelHandlerContext, ByteBuf byteBuf, List<Object> list) throws Exception {
+        byte packetId = byteBuf.readByte();
+        switch (packetId) {
+            case 0x01: {
+                channelHandlerContext.writeAndFlush(channelHandlerContext.alloc().buffer(1).writeByte(0x02));
+                break;
             }
-            else if (e.state() == IdleState.READER_IDLE) {
-                if (sessionManager.isAuthenticated(ctx.channel())) {
-                    sessionManager.removeSession(ctx.channel());
-                }
-                ctx.close();
+            case 0x02: default: {
+                break;
             }
-        } else {
-            super.userEventTriggered(ctx, evt);
         }
     }
 
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        if (msg instanceof PongWebSocketFrame) {
-            return;
+    public void userEventTriggered(ChannelHandlerContext channelHandlerContext, Object evt) throws Exception {
+        if (evt instanceof IdleStateEvent e) {
+
+            if (e.state() == IdleState.WRITER_IDLE) {
+                channelHandlerContext.writeAndFlush(channelHandlerContext.alloc().buffer(1).writeByte(0x01));
+            }
+            else if (e.state() == IdleState.READER_IDLE) {
+                System.out.println("User idling");
+                if (sessionManager.isAuthenticated(channelHandlerContext.channel())) {
+                    sessionManager.removeSession(channelHandlerContext.channel());
+                }
+                channelHandlerContext.close();
+            }
+        } else {
+            super.userEventTriggered(channelHandlerContext, evt);
         }
-        super.channelRead(ctx, msg);
     }
 }

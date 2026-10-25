@@ -44,7 +44,7 @@ To host your own server you just need to install Java 23+ and PostgreSQL(SQLite 
 - Maven
 - Java 23+
 - Git
-- PostgreSQL (SQLite support planned)
+- (Optional) PostgreSQL 
 ### Clone the repository
 ```bash 
 git clone https://github.com/So-Chat/SoChatServer.git

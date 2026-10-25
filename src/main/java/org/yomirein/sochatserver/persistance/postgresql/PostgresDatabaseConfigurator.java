@@ -113,6 +113,8 @@ public class PostgresDatabaseConfigurator extends DatabaseConfigurator<Propertie
         cfg.addDataSourceProperty("prepStmtCacheSize", "250");
         cfg.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
 
+        cfg.setRegisterMbeans(true);
+
         return new HikariDataSource(cfg);
     }
 

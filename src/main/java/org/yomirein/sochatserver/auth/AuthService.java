@@ -6,7 +6,6 @@ import java.util.Optional;
 
 import org.yomirein.sochatserver.common.managers.ChallengeManager;
 import org.yomirein.sochatserver.common.models.Challenge;
-import org.yomirein.sochatserver.common.models.MessagePacket;
 import org.yomirein.sochatserver.users.User;
 import org.yomirein.sochatserver.persistance.api.repositories.UserRepository;
 import org.yomirein.sochatserver.utils.JwtService;
@@ -25,7 +24,7 @@ public class AuthService {
         challengeManager.startCleanupThread();
     }
 
-    public MessagePacket createChallenge(String username) {
+    public Challenge createChallenge(String username) {
 
         Optional<User> userCheck = userRepository.findByName(username);
 
@@ -34,20 +33,14 @@ public class AuthService {
 
             Challenge challenge = challengeManager.generateChallenge(user.getId());
 
-            return new MessagePacket.Builder()
-                    .type("challenge")
-                    .put("success", true)
-                    .put("challenge", challenge.getChallenge())
-                    .put("expire_time", challenge.getExpireTime())
-                    .put("server_message", "Signature challenge with your private key")
-                    .build();
+            return challenge;
         }
         else{
-            return authResponse("login", false, "User is not valid");
+            throw new RuntimeException("User is not valid");
         }
     }
 
-    public MessagePacket login(String username, String signature, String challenge) {
+    public String login(String username, String signature, String challenge) {
 
         Optional<User> userCheck = userRepository.findByName(username);
 
@@ -56,7 +49,7 @@ public class AuthService {
             User user = userCheck.get();
 
             if (!challengeManager.checkChallenge(challengeManager.getChallenges().get(user.getId()))){
-                return authResponse("login", false, "Challenge is not valid");
+                throw new RuntimeException("Challenge is not valid");
             }
 
             var decodedPublicKey = Base64.getDecoder().decode(KeyParser.convertPublicKeyToString(user.getEd25519PublicKey()));
@@ -64,15 +57,10 @@ public class AuthService {
                 if (!challengeManager.verifyChallenge(
                         challenge.getBytes(StandardCharsets.UTF_8),
                         Base64.getDecoder().decode(signature), decodedPublicKey)) {
-                    return authResponse("login", false, "Challenge is not verified");
+                    throw new RuntimeException("Challenge is not verified");
                 }
                 else{
-                    return new MessagePacket.Builder()
-                            .type("login")
-                            .put("success", true)
-                            .put("server_message", "Login success")
-                            .put("token", JwtService.generateToken(user.getUsername(), JwtType.AUTH, 60 * 24))
-                            .build();
+                    return JwtService.generateToken(user.getUsername(), JwtType.AUTH, 60 * 24);
                 }
 
 
@@ -82,7 +70,7 @@ public class AuthService {
         }
 
         else  {
-            return authResponse("login", false, "User is not valid");
+            throw new RuntimeException("User is not valid");
         }
 
     }
@@ -104,34 +92,21 @@ public class AuthService {
 
     }
 
-    public MessagePacket register(String username, String ed25519PublicKey, String x25519PublicKey) {
+    public User register(String username, String ed25519PublicKey, String x25519PublicKey) {
 
         Optional<User> userCheck = userRepository.findByName(username);
         if (userCheck.isPresent()) {
-            return authResponse("register", false, "User already exists");
+            throw new RuntimeException("User already exists");
         }
 
         try {
             User user = new User(username,
                     KeyParser.stringToPublicKeyED25519(ed25519PublicKey),
                     KeyParser.stringToPublicKeyX25519(x25519PublicKey));
-            userRepository.saveUser(user);
-
-            return authResponse("register", true, "User created successfully");
-
+            return userRepository.saveUser(user);
 
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
-
-
-    private MessagePacket authResponse(String type, boolean success, String message) {
-        return new MessagePacket.Builder()
-                .type(type)
-                .put("success", success)
-                .put("server_message", message)
-                .build();
-    }
-
 }

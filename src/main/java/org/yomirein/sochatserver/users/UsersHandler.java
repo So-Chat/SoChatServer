@@ -8,6 +8,8 @@ import org.yomirein.sochatserver.persistance.api.repositories.TrustKeysRepositor
 import org.yomirein.sochatserver.sessions.Session;
 import org.yomirein.sochatserver.sessions.SessionManager;
 import org.yomirein.sochatserver.utils.JsonConfig;
+
+import static org.yomirein.sochatserver.utils.MessageSender.buildBaseResponse;
 import static org.yomirein.sochatserver.utils.MessageSender.notifyUser;
 import static org.yomirein.sochatserver.utils.MessageSender.sendError;
 
@@ -38,11 +40,7 @@ public class UsersHandler {
                 throw new IllegalArgumentException("Neither username nor id present in payload");
             }
 
-            MessagePacket answerPacket = new MessagePacket.Builder()
-                    .type(messagePacket.getType())
-                    .put("success", true)
-                    .put("requestId", messagePacket.getPayload().get("requestId").asText())
-                    .put("server_message", "Got fingerprint successfully!")
+            MessagePacket answerPacket = buildBaseResponse(messagePacket, "Got fingerprint successfully!")
                     .put("user", JsonConfig.MAPPER.writeValueAsString(otherUser))
                     .build();
 
@@ -93,11 +91,7 @@ public class UsersHandler {
             userService.changeProfile(userId, username, nickname, description, avatarId);
             User user = userService.getUser(userId);
 
-            MessagePacket answerPacket = new MessagePacket.Builder()
-                    .type(messagePacket.getType())
-                    .put("success", true)
-                    .put("requestId", messagePacket.getPayload().get("requestId").asText())
-                    .put("server_message", "Changed profile successfully")
+            MessagePacket answerPacket = buildBaseResponse(messagePacket, "Changed profile successfully")
                     .put("username", user.getUsername())
                     .put("nickname", user.getNickname())
                     .put("description", user.getDescription())
@@ -117,14 +111,10 @@ public class UsersHandler {
     public void deleteUser(ChannelHandlerContext channelHandlerContext, MessagePacket messagePacket, Long userId) {
         try {
             User user = userService.getUser(userId);
-            Set<Session> userSessions = sessionManager.getUserSessions(user);
+            Set<Session> userSessions = sessionManager.getUserSessions(user.getId());
             userService.deleteUser(userId);
 
-            MessagePacket answerPacket = new MessagePacket.Builder()
-                    .type(messagePacket.getType())
-                    .put("success", true)
-                    .put("requestId", messagePacket.getPayload().get("requestId").asText())
-                    .put("server_message", "Deleted user successfully.")
+            MessagePacket answerPacket = buildBaseResponse(messagePacket, "Deleted user successfully.")
                     .put("user_id", userId)
                     .build();
 

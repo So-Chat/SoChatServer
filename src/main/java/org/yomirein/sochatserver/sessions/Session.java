@@ -16,8 +16,14 @@ public class Session {
     private User user;
     private Channel channel;
 
+    private byte[] aesKey;
+
     // Check for user authentication(session has user only after authorization)
     public boolean isAuthenticated() {
         return user != null;
+    }
+
+    public Session(Channel channel) {
+        this.channel = channel;
     }
 }
